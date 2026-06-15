@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>OBX Trip Dashboard — Strongsville to Nags Head</title>
+<script>
+  /* set theme before paint to avoid flash */
+  (function(){
+    var t=localStorage.getItem('obx-theme');
+    if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';}
+    document.documentElement.setAttribute('data-theme',t);
+  })();
+</script>
+<style>
+  :root, :root[data-theme="dark"]{
+    --bg:#0e1116; --surface:#171c24; --surface2:#1f2630; --line:#2a323d;
+    --text:#e7edf3; --muted:#9aa7b4; --faint:#6b7682;
+    --accent:#34d399;
+    --ccs:#34d399;        /* native CCS - best */
+    --tesla:#60a5fa;      /* Tesla via adapter */
+    --verify:#fbbf24;     /* verify */
+    --warn:#f87171;
+    --tgt:#ff5a5a;        /* Target red (brightened for dark) */
+    --soc-fill:#34d399; --soc-low:#f87171; --soc-track:#222b35;
+    --hero-a:#19222e; --hero-b:#141a22;
+    --charge-fg:#0e1116;
+  }
+  :root[data-theme="light"]{
+    --bg:#f4f6f9; --surface:#ffffff; --surface2:#eef2f7; --line:#d8dee7;
+    --text:#1a2330; --muted:#566373; --faint:#8a97a6;
+    --accent:#0f9d63;
+    --ccs:#0f9d63;
+    --tesla:#2563eb;
+    --verify:#b7791f;
+    --warn:#dc2626;
+    --tgt:#cc0000;        /* Target brand red */
+    --soc-fill:#0f9d63; --soc-low:#dc2626; --soc-track:#e2e8f0;
+    --hero-a:#e9f3ed; --hero-b:#f4f6f9;
+    --charge-fg:#ffffff;
+  }
+  *{box-sizing:border-box}
+  body,.card,.stat,header.hero,.chip,td,th,.btn,.themebtn,.callout{
+    transition:background-color .25s ease,color .25s ease,border-color .25s ease}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px 20px 80px}
+
+  header.hero{position:relative;border:1px solid var(--line);
+    background:linear-gradient(160deg,var(--hero-a),var(--hero-b));
+    border-radius:16px;padding:24px 26px;margin-bottom:22px}
+  .hero h1{margin:0 0 4px;font-size:26px;letter-spacing:-0.3px}
+  .hero .sub{color:var(--muted);font-size:14px;margin-bottom:18px;max-width:78%}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .stat .k{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--faint)}
+  .stat .v{font-size:19px;font-weight:650;margin-top:3px}
+  .stat .v small{font-size:12px;color:var(--muted);font-weight:400}
+
+  .themebtn{position:absolute;top:16px;right:16px;display:inline-flex;align-items:center;gap:7px;
+    padding:7px 13px;border:1px solid var(--line);border-radius:999px;background:var(--surface);
+    color:var(--text);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
+  .themebtn:hover{border-color:var(--accent)}
+
+  h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);
+    margin:30px 4px 12px;display:flex;align-items:center;gap:10px}
+  h2.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:18px 18px 6px;margin-bottom:18px}
+  .legtitle{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin:2px 2px 14px}
+  .legtitle .name{font-size:18px;font-weight:650}
+  .legtitle .meta{color:var(--muted);font-size:13px}
+  .legtitle .route{color:var(--faint);font-size:12px;font-family:ui-monospace,Menlo,Consolas,monospace}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;color:var(--faint);font-weight:600;font-size:11px;text-transform:uppercase;
+    letter-spacing:.5px;padding:8px 10px;border-bottom:1px solid var(--line)}
+  td{padding:11px 10px;border-bottom:1px solid var(--surface2);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .stop .nm{font-weight:650}
+  .stop .ad{color:var(--faint);font-size:11.5px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .mi{font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
+
+  .chip{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;
+    border:1px solid transparent;white-space:nowrap;line-height:1.5}
+  .chip.ccs{color:var(--ccs);border:1px solid var(--ccs);
+    border-color:color-mix(in srgb,var(--ccs) 45%,transparent);
+    background:color-mix(in srgb,var(--ccs) 15%,transparent)}
+  .chip.tesla{color:var(--tesla);border:1px solid var(--tesla);
+    border-color:color-mix(in srgb,var(--tesla) 45%,transparent);
+    background:color-mix(in srgb,var(--tesla) 15%,transparent)}
+  .chip.verify{color:var(--verify);border:1px solid var(--verify);
+    border-color:color-mix(in srgb,var(--verify) 45%,transparent);
+    background:color-mix(in srgb,var(--verify) 15%,transparent)}
+  .chip.tgt{color:var(--tgt);border:1px solid var(--tgt);
+    border-color:color-mix(in srgb,var(--tgt) 50%,transparent);
+    background:color-mix(in srgb,var(--tgt) 13%,transparent)}
+  .chip.xtgt{color:var(--faint);border-color:var(--line);background:var(--surface2)}
+  .chip.home{color:var(--muted);border-color:var(--line);background:var(--surface2)}
+  .chip.charge{color:var(--charge-fg);background:var(--ccs);font-weight:700}
+  .chip.opt{color:var(--faint);border-color:var(--line);background:transparent}
+
+  .soc{display:flex;align-items:center;gap:8px;min-width:140px}
+  .bar{flex:1;height:8px;border-radius:6px;background:var(--soc-track);overflow:hidden;min-width:70px}
+  .bar > i{display:block;height:100%;border-radius:6px;background:var(--soc-fill)}
+  .bar.low > i{background:var(--soc-low)}
+  .soc .pct{font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--muted);width:34px;text-align:right}
+  .arrow{color:var(--faint);font-size:11px}
+  .to{color:var(--ccs);font-weight:650;font-variant-numeric:tabular-nums}
+
+  .note{color:var(--muted);font-size:12.5px}
+  .charger a{color:var(--text)}
+  .charger .dist{color:var(--faint);font-size:11.5px}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){
+    .hero .sub{max-width:100%}
+    .grid2{grid-template-columns:1fr}
+    table.resp thead{display:none}
+    table.resp,table.resp tbody,table.resp tr,table.resp td{display:block;width:100%}
+    table.resp tr{border:1px solid var(--line);border-radius:10px;margin-bottom:10px;padding:6px 4px}
+    table.resp td{border:none;padding:6px 12px}
+    table.resp td::before{content:attr(data-l);display:block;font-size:10px;text-transform:uppercase;
+      letter-spacing:.5px;color:var(--faint);margin-bottom:2px}
+  }
+
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted);margin:0 4px 16px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+
+  .callout{border:1px solid var(--line);border-left:3px solid var(--verify);background:var(--surface2);
+    border-radius:10px;padding:12px 14px;font-size:13px;color:var(--muted);margin:6px 2px 14px}
+  .callout.warn{border-left-color:var(--warn)}
+  .callout b{color:var(--text)}
+
+  ul.items{margin:6px 2px;padding-left:18px;color:var(--muted);font-size:13.5px}
+  ul.items li{margin-bottom:6px}
+  .done{color:var(--faint);text-decoration:line-through}
+
+  footer{color:var(--faint);font-size:12px;margin-top:26px;padding-top:14px;border-top:1px solid var(--line)}
+  .btn{display:inline-block;margin:2px 8px 2px 0;padding:8px 14px;border:1px solid var(--line);
+    border-radius:10px;background:var(--surface2);color:var(--text);font-size:13px;font-weight:600}
+  .btn:hover{border-color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <button class="themebtn" id="themeBtn" type="button" aria-label="Toggle dark and light mode">&#9728; Light</button>
+    <h1>Outer Banks Road Trip</h1>
+    <div class="sub">Strongsville, OH &rarr; overnight in McLean/Tysons, VA &rarr; Nags Head, NC &nbsp;&bull;&nbsp; Depart Jul 10, 2026 &bull; Return Jul 17/18 (TBD)</div>
+    <div class="stats">
+      <div class="stat"><div class="k">Total one-way</div><div class="v">646 <small>mi</small></div></div>
+      <div class="stat"><div class="k">Drive time</div><div class="v">~10h15 <small>+ charging</small></div></div>
+      <div class="stat"><div class="k">Vehicle</div><div class="v">Macan 4 EV <small>~95 kWh</small></div></div>
+      <div class="stat"><div class="k">Start charge</div><div class="v">99<small>%</small></div></div>
+      <div class="stat"><div class="k">DC stops</div><div class="v">3 <small>+ overnight</small></div></div>
+      <div class="stat"><div class="k">Connector</div><div class="v">CCS1 <small>/ NACS adapter</small></div></div>
+    </div>
+  </header>
+
+  <div class="legend">
+    <span><i class="dot" style="background:var(--tgt)"></i> Target store stop</span>
+    <span><i class="dot" style="background:var(--ccs)"></i> Native CCS (best, full speed)</span>
+    <span><i class="dot" style="background:var(--tesla)"></i> Tesla Supercharger (adapter, ~120&ndash;135 kW)</span>
+    <span><i class="dot" style="background:var(--verify)"></i> Verify power/access</span>
+    <span><i class="dot" style="background:var(--soc-low)"></i> Low arrival SOC</span>
+  </div>
+
+  <!-- ===================== CHARGING PLAN SUMMARY ===================== -->
+  <h2 class="sec">Charging plan at a glance</h2>
+  <div class="card">
+    <table class="resp">
+      <thead><tr><th>Charge</th><th>Where</th><th>Arrive</th><th>Charge to</th><th>Charger</th><th>~Time</th></tr></thead>
+      <tbody>
+        <tr>
+          <td data-l="Charge"><span class="chip charge">DC&nbsp;1</span></td>
+          <td data-l="Where" class="stop"><span class="nm">Monroeville, PA</span> <span class="chip tgt">&#9678; Target</span><div class="ad">142 mi in &bull; last Target before the mountains</div></td>
+          <td data-l="Arrive"><div class="soc"><div class="bar low"><i style="width:40%"></i></div><span class="pct">40%</span></div></td>
+          <td data-l="Charge to"><span class="to">85%</span></td>
+          <td data-l="Charger" class="charger">EVgo / Tesla SC <span class="chip verify">verify kW</span></td>
+          <td data-l="Time" class="mi">~15&ndash;20 min</td>
+        </tr>
+        <tr>
+          <td data-l="Charge"><span class="chip charge">DC&nbsp;2</span></td>
+          <td data-l="Where" class="stop"><span class="nm">Hagerstown, MD</span> <span class="chip tgt">&#9678; Target</span><div class="ad">299 mi in &bull; Tesla SC in the Target lot</div></td>
+          <td data-l="Arrive"><div class="soc"><div class="bar low"><i style="width:18%"></i></div><span class="pct">~18%</span></div></td>
+          <td data-l="Charge to"><span class="to">70%</span></td>
+          <td data-l="Charger" class="charger">Tesla Supercharger <span class="chip tesla">adapter</span></td>
+          <td data-l="Time" class="mi">~25 min</td>
+        </tr>
+        <tr>
+          <td data-l="Charge"><span class="chip home">night</span></td>
+          <td data-l="Where" class="stop"><span class="nm">McLean / Tysons, VA</span> <span class="chip xtgt">&#9711; Hotel</span><div class="ad">363 mi &bull; overnight &bull; top up for Leg 2</div></td>
+          <td data-l="Arrive"><div class="soc"><div class="bar"><i style="width:43%"></i></div><span class="pct">43%</span></div></td>
+          <td data-l="Charge to"><span class="to">~95%</span></td>
+          <td data-l="Charger" class="charger">Tysons Corner EA (~2 mi) or hotel <span class="chip ccs">CCS</span></td>
+          <td data-l="Time" class="mi">overnight</td>
+        </tr>
+        <tr>
+          <td data-l="Charge"><span class="chip charge">DC&nbsp;3</span></td>
+          <td data-l="Where" class="stop"><span class="nm">Newport News, VA</span> <span class="chip tgt">&#9678; Target</span><div class="ad">167 mi into Leg 2 &bull; full-speed EA</div></td>
+          <td data-l="Arrive"><div class="soc"><div class="bar low"><i style="width:25%"></i></div><span class="pct">25%</span></div></td>
+          <td data-l="Charge to"><span class="to">80%</span></td>
+          <td data-l="Charger" class="charger">Electrify America <span class="chip ccs">150&ndash;350 kW</span></td>
+          <td data-l="Time" class="mi">~20 min</td>
+        </tr>
+        <tr>
+          <td data-l="Charge"><span class="chip home">arrive</span></td>
+          <td data-l="Where" class="stop"><span class="nm">Nags Head lodging</span> <span class="chip xtgt">&#9711; Lodging</span><div class="ad">283 mi &bull; 8413 S Old Oregon Inlet Rd</div></td>
+          <td data-l="Arrive"><div class="soc"><div class="bar"><i style="width:32%"></i></div><span class="pct">32%</span></div></td>
+          <td data-l="Charge to"><span class="note">on-island as needed</span></td>
+          <td data-l="Charger" class="charger">Nags Head Tesla SC (~4 mi) <span class="chip tesla">adapter</span></td>
+          <td data-l="Time" class="mi">&mdash;</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout">SOC figures are <b>conservative</b>: ~95 kWh usable at ~2.4 mi per 1% (summer highway, AC, family load, ~72 mph). The Macan 4 will likely do better (~2.6&ndash;2.8 mi/%), so you should arrive a bit higher than shown. DC stops cap at 80% because charging speed tapers sharply above that. Lock the exact plan in <b>A Better Route Planner</b> with the Macan 4 profile and live weather.</div>
+
+  <!-- ===================== LEG 1 ===================== -->
+  <h2 class="sec">Leg 1 &middot; Strongsville &rarr; McLean</h2>
+  <div class="card">
+    <div class="legtitle">
+      <span class="name">363 mi</span>
+      <span class="meta">~5h39 driving &bull; 2 DC charges</span>
+      <span class="route">OH Tpke &rarr; I-76 &rarr; I-70 &rarr; I-270</span>
+    </div>
+    <table class="resp">
+      <thead><tr><th>Stop &amp; Target</th><th>Mile</th><th>Plan</th><th>SOC</th><th>Best &ge;75 kW charger</th></tr></thead>
+      <tbody>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Strongsville</span> <span class="chip tgt">&#9678; Target</span> <span class="chip home">start</span><div class="ad">18200 Royalton Rd</div></td>
+          <td data-l="Mile" class="mi">0</td>
+          <td data-l="Plan"><span class="note">Leave home at 99%</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar"><i style="width:99%"></i></div><span class="pct">99%</span></div></td>
+          <td data-l="Charger" class="charger">Home charge. Backup: <a href="https://api.plugshare.com/view/map?latitude=41.343305&longitude=-81.824915&spanLat=0.02&spanLng=0.02" target="_blank">Pearl Rd Tesla SC + Rivian</a> <span class="dist">~1.8 mi</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Cranberry Twp</span> <span class="chip tgt">&#9678; Target</span> <span class="chip opt">optional</span><div class="ad">1717 PA-228</div></td>
+          <td data-l="Mile" class="mi">115</td>
+          <td data-l="Plan"><span class="note">Bathroom only</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar"><i style="width:51%"></i></div><span class="pct">51%</span></div></td>
+          <td data-l="Charger" class="charger"><a href="https://api.plugshare.com/view/map?latitude=40.6860138&longitude=-80.1059544&spanLat=0.02&spanLng=0.02" target="_blank">Electrify America</a> <span class="chip ccs">CCS</span> <span class="dist">~1.1 mi</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Monroeville</span> <span class="chip tgt">&#9678; Target</span> <span class="chip charge">DC 1</span><div class="ad">4004 Monroeville Blvd</div></td>
+          <td data-l="Mile" class="mi">142</td>
+          <td data-l="Plan"><span class="arrow">arrive 40%</span> <span class="to">&rarr; 85%</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar low"><i style="width:40%"></i></div><span class="pct">40%</span></div></td>
+          <td data-l="Charger" class="charger"><a href="https://api.plugshare.com/view/map?latitude=40.4393575&longitude=-79.7664458&spanLat=0.02&spanLng=0.02" target="_blank">EVgo</a> <span class="dist">~0.5 mi</span> / <a href="https://api.plugshare.com/view/map?latitude=40.44536&longitude=-79.7604439&spanLat=0.02&spanLng=0.02" target="_blank">Tesla SC</a> ~1 mi <span class="chip verify">verify kW</span></td>
+        </tr>
+        <tr>
+          <td colspan="5" class="note" style="text-align:center;color:var(--faint);font-style:italic">&darr; 157 mi over the Alleghenies, no Target &bull; turnpike service plazas have charging if you want margin &darr;</td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Hagerstown</span> <span class="chip tgt">&#9678; Target</span> <span class="chip charge">DC 2</span><div class="ad">17213 Cole Rd</div></td>
+          <td data-l="Mile" class="mi">299</td>
+          <td data-l="Plan"><span class="arrow">arrive ~18%</span> <span class="to">&rarr; 70%</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar low"><i style="width:18%"></i></div><span class="pct">~18%</span></div></td>
+          <td data-l="Charger" class="charger"><a href="https://api.plugshare.com/view/map?latitude=39.620675&longitude=-77.773296&spanLat=0.02&spanLng=0.02" target="_blank">Tesla SC in the Target lot</a> <span class="chip tesla">adapter</span> <span class="dist">&lt;0.1 mi</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Frederick</span> <span class="chip tgt">&#9678; Target</span> <span class="chip opt">optional</span><div class="ad">5437 Urbana Pike</div></td>
+          <td data-l="Mile" class="mi">327</td>
+          <td data-l="Plan"><span class="note">Bathroom only</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar"><i style="width:58%"></i></div><span class="pct">58%</span></div></td>
+          <td data-l="Charger" class="charger"><a href="https://api.plugshare.com/view/map?latitude=39.384697&longitude=-77.405499&spanLat=0.02&spanLng=0.02" target="_blank">Tesla SC</a> ~0.4 mi / <a href="https://api.plugshare.com/view/map?latitude=39.39557&longitude=-77.4094885&spanLat=0.02&spanLng=0.02" target="_blank">EA</a> ~1.1 mi <span class="chip ccs">CCS</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Gaithersburg</span> <span class="chip tgt">&#9678; Target</span> <span class="chip opt">optional</span><div class="ad">25 Grand Corner Ave</div></td>
+          <td data-l="Mile" class="mi">348</td>
+          <td data-l="Plan"><span class="note">Bathroom only</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar"><i style="width:49%"></i></div><span class="pct">49%</span></div></td>
+          <td data-l="Charger" class="charger"><a href="https://api.plugshare.com/view/map?latitude=39.118193&longitude=-77.20231&spanLat=0.02&spanLng=0.02" target="_blank">Tesla SC adjacent</a> + EVgo + IONNA <span class="chip tesla">adapter</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">McLean / Tysons</span> <span class="chip xtgt">&#9711; Hotel</span> <span class="chip home">overnight</span><div class="ad">1825 Capital One Dr</div></td>
+          <td data-l="Mile" class="mi">363</td>
+          <td data-l="Plan"><span class="arrow">arrive 43%</span> <span class="to">&rarr; ~95%</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar"><i style="width:43%"></i></div><span class="pct">43%</span></div></td>
+          <td data-l="Charger" class="charger"><a href="https://api.plugshare.com/view/map?latitude=38.9174232&longitude=-77.2202956&spanLat=0.02&spanLng=0.02" target="_blank">Tysons Corner EA</a> <span class="dist">~2 mi</span> or hotel <span class="chip ccs">CCS</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===================== LEG 2 ===================== -->
+  <h2 class="sec">Leg 2 &middot; McLean &rarr; Nags Head</h2>
+  <div class="card">
+    <div class="legtitle">
+      <span class="name">283 mi</span>
+      <span class="meta">~4h37 driving &bull; 1 DC charge</span>
+      <span class="route">I-95 &rarr; I-295 &rarr; I-64 &rarr; I-664 &rarr; VA-168 &rarr; US-158</span>
+    </div>
+    <table class="resp">
+      <thead><tr><th>Stop &amp; Target</th><th>Mile</th><th>Plan</th><th>SOC</th><th>Best &ge;75 kW charger</th></tr></thead>
+      <tbody>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">McLean / Tysons</span> <span class="chip xtgt">&#9711; Hotel</span> <span class="chip home">start</span><div class="ad">1825 Capital One Dr</div></td>
+          <td data-l="Mile" class="mi">0</td>
+          <td data-l="Plan"><span class="note">Start ~95%</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar"><i style="width:95%"></i></div><span class="pct">95%</span></div></td>
+          <td data-l="Charger" class="charger"><span class="note">Topped up overnight</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Fredericksburg</span> <span class="chip tgt">&#9678; Target</span> <span class="chip opt">optional</span><div class="ad">1180 Carl D Silver Pkwy</div></td>
+          <td data-l="Mile" class="mi">52</td>
+          <td data-l="Plan"><span class="note">Bathroom only</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar"><i style="width:73%"></i></div><span class="pct">73%</span></div></td>
+          <td data-l="Charger" class="charger"><a href="https://api.plugshare.com/view/map?latitude=38.2942304&longitude=-77.5127972&spanLat=0.02&spanLng=0.02" target="_blank">Electrify America</a> <span class="chip ccs">CCS</span> <span class="dist">~0.4 mi, off I-95 exit 130</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Richmond / White Oak</span> <span class="chip tgt">&#9678; Target</span> <span class="chip opt">optional</span><div class="ad">4521 S Laburnum Ave</div></td>
+          <td data-l="Mile" class="mi">112</td>
+          <td data-l="Plan"><span class="note">Bathroom only</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar"><i style="width:48%"></i></div><span class="pct">48%</span></div></td>
+          <td data-l="Charger" class="charger"><a href="https://api.plugshare.com/view/map?latitude=37.5297596&longitude=-77.353911&spanLat=0.02&spanLng=0.02" target="_blank">Tesla SC adjacent</a> <span class="chip tesla">adapter</span> <span class="dist">~0.2 mi, I-64 exit 195</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Williamsburg</span> <span class="chip tgt">&#9678; Target</span> <span class="chip opt">optional</span><div class="ad">4630 Monticello Ave</div></td>
+          <td data-l="Mile" class="mi">152</td>
+          <td data-l="Plan"><span class="note">Backup charge</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar low"><i style="width:32%"></i></div><span class="pct">32%</span></div></td>
+          <td data-l="Charger" class="charger"><a href="https://api.plugshare.com/view/map?latitude=37.2704949&longitude=-76.7603251&spanLat=0.02&spanLng=0.02" target="_blank">EVgo on-site</a> <span class="chip verify">verify kW</span> <span class="dist">~0.1 mi</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Newport News</span> <span class="chip tgt">&#9678; Target</span> <span class="chip charge">DC 3</span><div class="ad">12130 Jefferson Ave</div></td>
+          <td data-l="Mile" class="mi">167</td>
+          <td data-l="Plan"><span class="arrow">arrive 25%</span> <span class="to">&rarr; 80%</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar low"><i style="width:25%"></i></div><span class="pct">25%</span></div></td>
+          <td data-l="Charger" class="charger"><a href="https://api.plugshare.com/view/map?latitude=37.1196033&longitude=-76.5074027&spanLat=0.02&spanLng=0.02" target="_blank">Electrify America</a> <span class="chip ccs">150&ndash;350 kW</span> <span class="dist">~1.2 mi</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Chesapeake</span> <span class="chip tgt">&#9678; Target</span> <span class="chip opt">optional</span><div class="ad">1316 Greenbrier Pkwy</div></td>
+          <td data-l="Mile" class="mi">202</td>
+          <td data-l="Plan"><span class="note">Top-off only if needed</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar"><i style="width:65%"></i></div><span class="pct">65%</span></div></td>
+          <td data-l="Charger" class="charger">Target = bathroom/retail. <a href="https://api.plugshare.com/view/map?latitude=36.657861&longitude=-76.224461&spanLat=0.02&spanLng=0.02" target="_blank">Battlefield Blvd Tesla SC</a> ~7.8 mi S on VA-168 <span class="chip tesla">adapter</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Nags Head lodging</span> <span class="chip xtgt">&#9711; Lodging</span> <span class="chip home">arrive</span><div class="ad">8413 S Old Oregon Inlet Rd</div></td>
+          <td data-l="Mile" class="mi">283</td>
+          <td data-l="Plan"><span class="arrow">arrive 32%</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar"><i style="width:32%"></i></div><span class="pct">32%</span></div></td>
+          <td data-l="Charger" class="charger"><a href="https://api.plugshare.com/view/map?latitude=35.938166&longitude=-75.616094&spanLat=0.02&spanLng=0.02" target="_blank">Nags Head Tesla SC</a> ~4 mi N <span class="chip tesla">adapter</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout warn"><b>The pinch points:</b> the 157-mi mountain stretch between Monroeville and Hagerstown (charge to 85% at Monroeville), and the ~80-mi rural run after Chesapeake to the island. With an 80% charge at Newport News you reach the lodging at ~32% without stopping again, so Chesapeake is optional insurance.</div>
+
+  <!-- ===================== OBX ===================== -->
+  <h2 class="sec">On the island (no Target, Tesla/Rivian only for fast DC)</h2>
+  <div class="grid2">
+    <div class="card" style="margin-bottom:0">
+      <div class="stop"><span class="nm">Nags Head Tesla SC</span> <span class="chip tesla">adapter</span></div>
+      <div class="ad" style="font-family:ui-monospace,monospace;color:var(--faint);font-size:11.5px;margin:4px 0 8px">5000 S Croatan Hwy &bull; ~4 mi N of lodging</div>
+      <div class="note">Your main on-island charge during the stay. <a href="https://api.plugshare.com/view/map?latitude=35.938166&longitude=-75.616094&spanLat=0.02&spanLng=0.02" target="_blank">View on PlugShare</a></div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="stop"><span class="nm">Kill Devil Hills Tesla SC</span> <span class="chip tesla">adapter</span></div>
+      <div class="ad" style="font-family:ui-monospace,monospace;color:var(--faint);font-size:11.5px;margin:4px 0 8px">2012 S Croatan Hwy &bull; ~10 mi N</div>
+      <div class="note">Second Supercharger if Nags Head is busy. Rivian Adventure Network sits beside the Nags Head one (150 kW+ CCS, but verify non-Rivian access). <a href="https://api.plugshare.com/view/map?latitude=35.9934428&longitude=-75.6508983&spanLat=0.02&spanLng=0.02" target="_blank">View on PlugShare</a></div>
+    </div>
+  </div>
+
+  <!-- ===================== NOTES / ITEMS ===================== -->
+  <h2 class="sec">Before you go</h2>
+  <ul class="items">
+    <li>Pack the <b>Porsche NACS-to-CCS adapter</b> &mdash; Hagerstown, Richmond, Chesapeake, and the whole island lean on Tesla Superchargers.</li>
+    <li>Set up the <b>Tesla app</b> (Charge Your Non-Tesla) and an <b>Electrify America</b> account before leaving.</li>
+    <li>Verify exact kW on the EVgo units at <b>Monroeville</b> and <b>Williamsburg</b> in PlugShare (could be legacy 50 kW; Tesla SC backups are listed for both).</li>
+    <li>Confirm the McLean hotel's charging; if none, plan the overnight top-up at <b>Tysons Corner EA</b> (~2 mi).</li>
+    <li class="done">Map Targets + &ge;75 kW chargers for both legs</li>
+    <li class="done">Confirm lodging and build SOC plan for the Macan 4 Electric</li>
+  </ul>
+
+  <h2 class="sec">Open route in Google Maps</h2>
+  <div>
+    <a class="btn" target="_blank" href="https://www.google.com/maps/dir/?api=1&origin=Strongsville,+OH+44149&destination=1825+Capital+One+Dr,+McLean,+VA+22102&waypoints=4004+Monroeville+Blvd,+Monroeville,+PA%7C17213+Cole+Rd,+Hagerstown,+MD&travelmode=driving">Leg 1 directions &rarr;</a>
+    <a class="btn" target="_blank" href="https://www.google.com/maps/dir/?api=1&origin=1825+Capital+One+Dr,+McLean,+VA+22102&destination=8413+S+Old+Oregon+Inlet+Rd,+Nags+Head,+NC+27959&waypoints=12130+Jefferson+Ave,+Newport+News,+VA&travelmode=driving">Leg 2 directions &rarr;</a>
+  </div>
+
+  <footer>
+    Distances, charger locations, and the lodging pin pulled from Google Maps on 2026-06-15. SOC modeled on ~95 kWh usable at a conservative ~2.4 mi per 1% (real-world likely better). Charger power ratings inferred from network type where Google did not expose kW; verify the "verify kW" sites in PlugShare. Build the final energy plan in A Better Route Planner with the 2024 Porsche Macan 4 Electric profile.
+  </footer>
+
+</div>
+
+<script>
+  (function(){
+    var root=document.documentElement, btn=document.getElementById('themeBtn');
+    function label(){
+      var light = root.getAttribute('data-theme')==='light';
+      // show the action the button will take
+      btn.innerHTML = light ? '☾ Dark' : '☀ Light';
+    }
+    label();
+    btn.addEventListener('click', function(){
+      var next = root.getAttribute('data-theme')==='light' ? 'dark' : 'light';
+      root.setAttribute('data-theme', next);
+      try{ localStorage.setItem('obx-theme', next); }catch(e){}
+      label();
+    });
+  })();
+</script>
+</body>
+</html>
