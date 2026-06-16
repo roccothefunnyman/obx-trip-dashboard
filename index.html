@@ -172,6 +172,12 @@
   .navsheet .cancel{display:block;width:100%;text-align:center;padding:11px;margin-top:2px;
     background:transparent;border:none;color:var(--muted);font-size:14px;font-weight:600;
     cursor:pointer;font-family:inherit}
+  /* embedded maps */
+  .routemap{width:100%;height:420px;border:0;display:block;background:var(--surface2)}
+  @media(max-width:760px){.routemap{height:300px}}
+  .navsheet .navmap{margin:2px 0 12px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .navsheet .navmap iframe{width:100%;height:180px;border:0;display:block;background:var(--surface2)}
+  .mapnote{color:var(--faint);font-size:11.5px;margin:8px 2px 0}
 </style>
 </head>
 <body>
@@ -199,6 +205,12 @@
     <span><i class="dot" style="background:var(--soc-low)"></i> Low arrival SOC</span>
   </div>
   <div class="note" style="margin:-6px 4px 16px">Tip: tap any <b style="color:var(--tgt)">&#9678; Target</b> pill, the Hotel/Lodging pill, or a charger name to open that address in Apple Maps, Google Maps, or Waze.</div>
+
+  <h2 class="sec">Route map</h2>
+  <div class="card" style="padding:0;overflow:hidden">
+    <iframe class="routemap" loading="lazy" title="Full trip route map" src="https://maps.google.com/maps?saddr=Strongsville,+OH+44149&daddr=17213+Cole+Rd,+Hagerstown,+MD+to:1825+Capital+One+Dr,+McLean,+VA+to:12130+Jefferson+Ave,+Newport+News,+VA+to:8413+S+Old+Oregon+Inlet+Rd,+Nags+Head,+NC&output=embed"></iframe>
+  </div>
+  <div class="mapnote">Embedded maps load from Google and always render in light mode. Tap any stop pill or charger name below for an interactive preview plus directions.</div>
 
   <!-- ===================== CHARGING PLAN SUMMARY ===================== -->
   <h2 class="sec">Charging plan at a glance</h2>
@@ -444,6 +456,7 @@
   <div class="sheet">
     <h3 id="navTitle">Open in maps</h3>
     <div class="addr" id="navAddr"></div>
+    <div class="navmap"><iframe id="navMapFrame" loading="lazy" title="Map preview"></iframe></div>
     <a class="app" id="navApple" target="_blank" rel="noopener"><span class="ic">&#127822;</span> Apple Maps</a>
     <a class="app" id="navGoogle" target="_blank" rel="noopener"><span class="ic">&#128506;&#65039;</span> Google Maps</a>
     <a class="app" id="navWaze" target="_blank" rel="noopener"><span class="ic">&#128663;</span> Waze</a>
@@ -479,9 +492,10 @@
     aApple.href='https://maps.apple.com/?q='+e;
     aGoogle.href='https://www.google.com/maps/search/?api=1&query='+e;
     aWaze.href='https://waze.com/ul?q='+e;
+    document.getElementById('navMapFrame').src='https://maps.google.com/maps?q='+e+'&z=15&output=embed';
     sheet.classList.add('open');
   }
-  function closeSheet(){sheet.classList.remove('open');}
+  function closeSheet(){sheet.classList.remove('open');var mf=document.getElementById('navMapFrame');if(mf)mf.src='about:blank';}
   document.addEventListener('click',function(ev){
     var pill=ev.target.closest && ev.target.closest('.chip.nav');
     if(pill){
