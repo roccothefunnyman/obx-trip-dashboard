@@ -204,6 +204,21 @@
   tr:has(.chip.charge) .to::before{content:"\26A1 "}
   tr:has(.chip.opt){opacity:.58}
   tr:has(.chip.opt):hover{opacity:1}
+
+  /* --- progress tracking (where am I) --- */
+  .progchip{display:inline-block;margin-top:8px;padding:3px 10px;border:1px solid var(--line);border-radius:999px;
+    background:transparent;color:var(--faint);font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit}
+  .progchip:hover{border-color:var(--accent);color:var(--text)}
+  .progchip.done,.progchip.took{color:var(--ccs);border-color:color-mix(in srgb,var(--ccs) 50%,transparent);
+    background:color-mix(in srgb,var(--ccs) 14%,transparent)}
+  .progchip.skip{color:var(--muted);border-color:var(--line);background:var(--surface2)}
+  .nextbadge{display:inline-block;margin-right:8px;padding:2px 8px;border-radius:6px;background:var(--accent);
+    color:var(--charge-fg);font-size:10.5px;font-weight:800;letter-spacing:.5px;vertical-align:middle}
+  tr.is-next{opacity:1 !important;box-shadow:inset 0 0 0 2px var(--accent) !important}
+  tr.is-done,tr.is-took,tr.is-skip{opacity:.45 !important}
+  .progreset{margin-left:auto;padding:4px 11px;border:1px solid var(--line);border-radius:999px;
+    background:var(--surface);color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
+  .progreset:hover{border-color:var(--accent);color:var(--text)}
 </style>
 </head>
 <body>
@@ -597,6 +612,63 @@
     chargerCell.appendChild(document.createElement('br'));
     chargerCell.appendChild(btn);
   });
+
+  // ---- progress tracking: tap to check off; NEXT auto-advances; saved on this device ----
+  var PKEY='obx-progress-v1', prog={};
+  try{ prog=JSON.parse(localStorage.getItem(PKEY)||'{}')||{}; }catch(e){ prog={}; }
+  function saveProg(){ try{ localStorage.setItem(PKEY,JSON.stringify(prog)); }catch(e){} }
+  var trackRows=[];
+  Array.prototype.forEach.call(document.querySelectorAll('table.resp tbody tr'),function(tr){
+    var stopCell=tr.querySelector('td.stop'); if(!stopCell) return;
+    var chargerCell=tr.querySelector('td.charger'); if(!chargerCell||!chargerCell.querySelector('a.navq')) return;
+    var nmEl=stopCell.querySelector('.nm'); if(!nmEl) return;
+    var miEl=tr.querySelector('td.mi');
+    var key=nmEl.textContent.trim()+'|'+(miEl?miEl.textContent.trim():'');
+    var optional=!!tr.querySelector('.chip.opt');
+    var badge=document.createElement('span'); badge.className='nextbadge'; badge.textContent='NEXT'; badge.hidden=true;
+    nmEl.parentNode.insertBefore(badge,nmEl);
+    var chip=document.createElement('button'); chip.type='button'; chip.className='progchip';
+    stopCell.appendChild(chip);
+    var rec={tr:tr,chip:chip,badge:badge,key:key,optional:optional};
+    trackRows.push(rec);
+    chip.addEventListener('click',function(ev){
+      ev.stopPropagation();
+      var st=prog[key]||'pending';
+      if(optional){ st = st==='pending'?'took':(st==='took'?'skip':'pending'); }
+      else { st = st==='done'?'pending':'done'; }
+      if(st==='pending'){ delete prog[key]; } else { prog[key]=st; }
+      saveProg(); renderProg();
+    });
+  });
+  function renderProg(){
+    trackRows.forEach(function(rec){
+      var st=prog[rec.key]||'pending';
+      rec.tr.classList.remove('is-done','is-took','is-skip','is-next');
+      rec.badge.hidden=true;
+      var lbl, cls='progchip';
+      if(rec.optional){
+        if(st==='took'){ lbl='✓ Took it'; cls+=' took'; rec.tr.classList.add('is-took'); }
+        else if(st==='skip'){ lbl='↷ Skipped'; cls+=' skip'; rec.tr.classList.add('is-skip'); }
+        else { lbl='○ Stop here?'; }
+      } else {
+        if(st==='done'){ lbl='✓ Done'; cls+=' done'; rec.tr.classList.add('is-done'); }
+        else { lbl='○ Mark done'; }
+      }
+      rec.chip.textContent=lbl; rec.chip.className=cls;
+    });
+    for(var i=0;i<trackRows.length;i++){
+      var s=prog[trackRows[i].key]||'pending';
+      if(s==='pending'){ trackRows[i].tr.classList.add('is-next'); trackRows[i].badge.hidden=false; break; }
+    }
+  }
+  renderProg();
+  var legendEl=document.querySelector('.legend');
+  if(legendEl){
+    var rst=document.createElement('button'); rst.type='button'; rst.className='progreset';
+    rst.textContent='↺ Reset progress';
+    rst.addEventListener('click',function(){ prog={}; saveProg(); renderProg(); });
+    legendEl.appendChild(rst);
+  }
 })();
 </script>
 </body>
