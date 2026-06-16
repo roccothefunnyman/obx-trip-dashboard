@@ -215,10 +215,21 @@
   .nextbadge{display:inline-block;margin-right:8px;padding:2px 8px;border-radius:6px;background:var(--accent);
     color:var(--charge-fg);font-size:10.5px;font-weight:800;letter-spacing:.5px;vertical-align:middle}
   tr.is-next{opacity:1 !important;box-shadow:inset 0 0 0 2px var(--accent) !important}
-  tr.is-done,tr.is-took,tr.is-skip{opacity:.45 !important}
+  tr.is-done,tr.is-took,tr.is-skip,tr.is-passed{opacity:.45 !important}
   .progreset{margin-left:auto;padding:4px 11px;border:1px solid var(--line);border-radius:999px;
     background:var(--surface);color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
   .progreset:hover{border-color:var(--accent);color:var(--text)}
+  /* --- live location --- */
+  .geobtn{margin-left:auto;padding:4px 11px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
+  .geobtn:hover{border-color:var(--accent);color:var(--text)}
+  .geobtn.on{color:var(--ccs);border-color:color-mix(in srgb,var(--ccs) 55%,transparent);background:color-mix(in srgb,var(--ccs) 14%,transparent)}
+  .geodist{display:block;margin-top:6px;font-size:12px;font-weight:600;color:var(--muted)}
+  .geodist.near{color:var(--ccs)}
+  .geodist.past{color:var(--faint);font-weight:500}
+  #geobar{margin:0 4px 16px;padding:11px 15px;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--surface2);color:var(--text);font-size:14px;font-weight:650}
+  #geobar.near{border-left-color:var(--ccs);background:color-mix(in srgb,var(--ccs) 12%,transparent)}
+  #geobar.err{border-left-color:var(--warn);font-weight:500;color:var(--muted)}
+  .progchip.passed{color:var(--verify);border-color:color-mix(in srgb,var(--verify) 50%,transparent);background:color-mix(in srgb,var(--verify) 14%,transparent)}
 </style>
 </head>
 <body>
@@ -634,7 +645,7 @@
     chip.addEventListener('click',function(ev){
       ev.stopPropagation();
       var st=prog[key]||'pending';
-      if(optional){ st = st==='pending'?'took':(st==='took'?'skip':'pending'); }
+      if(optional){ st = (st==='took')?'skip':((st==='skip')?(geoActive?'passed':'pending'):'took'); }
       else { st = st==='done'?'pending':'done'; }
       if(st==='pending'){ delete prog[key]; } else { prog[key]=st; }
       saveProg(); renderProg();
@@ -649,6 +660,7 @@
       if(rec.optional){
         if(st==='took'){ lbl='✓ Took it'; cls+=' took'; rec.tr.classList.add('is-took'); }
         else if(st==='skip'){ lbl='↷ Skipped'; cls+=' skip'; rec.tr.classList.add('is-skip'); }
+        else if(st==='passed'){ lbl='➜ Passed — took? skip?'; cls+=' passed'; rec.tr.classList.add('is-passed'); }
         else { lbl='○ Stop here?'; }
       } else {
         if(st==='done'){ lbl='✓ Done'; cls+=' done'; rec.tr.classList.add('is-done'); }
@@ -658,7 +670,7 @@
     });
     for(var i=0;i<trackRows.length;i++){
       var s=prog[trackRows[i].key]||'pending';
-      if(s==='pending'){ trackRows[i].tr.classList.add('is-next'); trackRows[i].badge.hidden=false; break; }
+      if(!s||s==='pending'){ trackRows[i].tr.classList.add('is-next'); trackRows[i].badge.hidden=false; break; }
     }
   }
   renderProg();
@@ -669,6 +681,75 @@
     rst.addEventListener('click',function(){ prog={}; saveProg(); renderProg(); });
     legendEl.appendChild(rst);
   }
+
+  // ---- live location: auto-advance NEXT, auto-pass stops behind you, show distances ----
+  var COORDS={
+    "Strongsville":[41.3171134,-81.8280719],
+    "Cranberry Twp":[40.6885494,-80.0845715],
+    "Monroeville":[40.4342288,-79.7727414],
+    "Hagerstown":[39.6198209,-77.7732799],
+    "Frederick":[39.382408,-77.3977345],
+    "Gaithersburg":[39.1188702,-77.2027154],
+    "McLean / Tysons":[38.9256094,-77.2108244],
+    "Fredericksburg":[38.2999624,-77.5132679],
+    "Richmond / White Oak":[37.5313398,-77.3566736],
+    "Williamsburg":[37.271352,-76.761245],
+    "Newport News":[37.107304,-76.4915515],
+    "Chesapeake":[36.7711037,-76.2321604],
+    "Nags Head lodging":[35.8976766,-75.5903475]
+  };
+  var APPROACH_MI=5, AT_MI=1.2, geoActive=false, geoWatch=null, geoCurIdx=0, wakeSentinel=null;
+  trackRows.forEach(function(rec){
+    var nm=rec.tr.querySelector('.nm'); rec.coord=nm?COORDS[norm(nm.textContent.trim())]:null;
+    var gd=document.createElement('span'); gd.className='geodist'; gd.hidden=true;
+    rec.chip.parentNode.appendChild(gd); rec.geodist=gd;
+  });
+  function haversine(la1,lo1,la2,lo2){var R=3958.8,p=Math.PI/180,dla=(la2-la1)*p,dlo=(lo2-lo1)*p;
+    var s=Math.sin(dla/2)*Math.sin(dla/2)+Math.cos(la1*p)*Math.cos(la2*p)*Math.sin(dlo/2)*Math.sin(dlo/2);
+    return 2*R*Math.asin(Math.sqrt(s));}
+  function fmtMi(m){return m<10?(Math.round(m*10)/10)+' mi':Math.round(m)+' mi';}
+  var geobar=document.createElement('div'); geobar.id='geobar'; geobar.hidden=true;
+  if(legendEl&&legendEl.parentNode){ legendEl.parentNode.insertBefore(geobar,legendEl.nextSibling); }
+  function onPos(p){
+    var lat=p.coords.latitude, lng=p.coords.longitude;
+    var dists=trackRows.map(function(rec){return rec.coord?haversine(lat,lng,rec.coord[0],rec.coord[1]):null;});
+    while(geoCurIdx<trackRows.length-1 && dists[geoCurIdx+1]!=null && dists[geoCurIdx]!=null && dists[geoCurIdx+1]<dists[geoCurIdx]) geoCurIdx++;
+    for(var i=0;i<geoCurIdx;i++){ var r=trackRows[i], st=prog[r.key];
+      if(r.optional){ if(!st||st==='pending') prog[r.key]='passed'; }
+      else { if(!st||st==='pending') prog[r.key]='done'; } }
+    saveProg(); renderProg();
+    trackRows.forEach(function(rec,idx){ var gd=rec.geodist; if(!gd) return; var d=dists[idx];
+      if(d==null){ gd.hidden=true; return; } gd.hidden=false;
+      if(idx<geoCurIdx){ gd.className='geodist past'; gd.textContent='✓ passed'; }
+      else if(idx===geoCurIdx){
+        if(d<=AT_MI){ gd.className='geodist near'; gd.textContent='📍 arriving — '+fmtMi(d); }
+        else if(d<=APPROACH_MI){ gd.className='geodist near'; gd.textContent='📍 '+fmtMi(d)+' — approaching'; }
+        else { gd.className='geodist'; gd.textContent='📍 '+fmtMi(d)+' away'; } }
+      else { gd.className='geodist'; gd.textContent='📍 '+fmtMi(d)+' away'; } });
+    var cur=trackRows[geoCurIdx];
+    if(cur){ var d2=dists[geoCurIdx], cn=cur.tr.querySelector('.nm'), name=cn?cn.textContent.trim():'next stop';
+      geobar.hidden=false;
+      if(d2!=null&&d2<=APPROACH_MI){ geobar.className='near'; geobar.textContent='📍 Approaching '+name+' — '+fmtMi(d2); }
+      else if(d2!=null){ geobar.className=''; geobar.textContent='📍 '+fmtMi(d2)+' to '+name; }
+      else { geobar.className=''; geobar.textContent='📍 Tracking…'; } }
+  }
+  function onGeoErr(e){ geobar.hidden=false; geobar.className='err';
+    geobar.textContent='📍 Location unavailable'+(e&&e.message?' ('+e.message+')':'')+'. A Wi-Fi-only iPad has no GPS while driving — run this on your iPhone or a cellular iPad.'; }
+  function reqWake(){ try{ if('wakeLock' in navigator){ navigator.wakeLock.request('screen').then(function(s){wakeSentinel=s;}).catch(function(){}); } }catch(e){} }
+  function relWake(){ try{ if(wakeSentinel){ wakeSentinel.release(); wakeSentinel=null; } }catch(e){} }
+  document.addEventListener('visibilitychange',function(){ if(geoActive&&document.visibilityState==='visible'&&!wakeSentinel) reqWake(); });
+  var geoBtn=document.createElement('button'); geoBtn.type='button'; geoBtn.className='geobtn'; geoBtn.textContent='📍 Use my location';
+  geoBtn.addEventListener('click',function(){
+    if(geoActive){ geoActive=false; geoBtn.textContent='📍 Use my location'; geoBtn.classList.remove('on');
+      if(geoWatch!=null){ navigator.geolocation.clearWatch(geoWatch); geoWatch=null; } geobar.hidden=true;
+      trackRows.forEach(function(rec){ if(rec.geodist) rec.geodist.hidden=true; }); relWake(); renderProg(); return; }
+    if(!navigator.geolocation){ onGeoErr({message:'not supported'}); return; }
+    geoActive=true; geoBtn.textContent='📍 Tracking — tap to stop'; geoBtn.classList.add('on');
+    trackRows.forEach(function(rec){ if(rec.geodist) rec.geodist.hidden=false; });
+    geoWatch=navigator.geolocation.watchPosition(onPos,onGeoErr,{enableHighAccuracy:true,maximumAge:5000,timeout:20000});
+    reqWake();
+  });
+  if(legendEl){ legendEl.insertBefore(geoBtn, (typeof rst!=='undefined'&&rst)?rst:null); }
 })();
 </script>
 </body>
