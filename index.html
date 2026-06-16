@@ -178,6 +178,14 @@
   .navsheet .navmap{margin:2px 0 12px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
   .navsheet .navmap iframe{width:100%;height:180px;border:0;display:block;background:var(--surface2)}
   .mapnote{color:var(--faint);font-size:11.5px;margin:8px 2px 0}
+  .mapbtn{display:inline-block;margin-top:8px;padding:3px 9px;border:1px solid var(--line);border-radius:999px;
+    background:var(--surface2);color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
+  .mapbtn:hover{border-color:var(--accent);color:var(--text)}
+  .mapbtn.open{border-color:var(--accent);color:var(--accent)}
+  .maprow > td{padding:0 10px 12px}
+  .maprow td::before{display:none}
+  .stopmap-wrap{border:1px solid var(--line);border-radius:12px;overflow:hidden;max-width:520px}
+  .stopmap-wrap iframe{width:100%;height:220px;border:0;display:block;background:var(--surface2)}
 </style>
 </head>
 <body>
@@ -210,7 +218,7 @@
   <div class="card" style="padding:0;overflow:hidden">
     <iframe class="routemap" loading="lazy" title="Full trip route map" src="https://maps.google.com/maps?saddr=Strongsville,+OH+44149&daddr=17213+Cole+Rd,+Hagerstown,+MD+to:1825+Capital+One+Dr,+McLean,+VA+to:12130+Jefferson+Ave,+Newport+News,+VA+to:8413+S+Old+Oregon+Inlet+Rd,+Nags+Head,+NC&output=embed"></iframe>
   </div>
-  <div class="mapnote">Embedded maps load from Google and always render in light mode. Tap any stop pill or charger name below for an interactive preview plus directions.</div>
+  <div class="mapnote">Embedded maps load from Google and always render in light mode. Tap a stop pill or charger name for a location preview, or use the <b>&#128506;&#65039; Target &rarr; charger</b> button in each stop for the last-mile route.</div>
 
   <!-- ===================== CHARGING PLAN SUMMARY ===================== -->
   <h2 class="sec">Charging plan at a glance</h2>
@@ -522,6 +530,50 @@
     if(e.key==='Escape'){ closeSheet(); return; }
     var a=document.activeElement;
     if((e.key==='Enter'||e.key===' ') && a && a.classList && a.classList.contains('nav')){ e.preventDefault(); a.click(); }
+  });
+
+  // ---- per-stop "Target -> charger" expandable directions maps (leg tables only) ----
+  var STOPMAP={
+    "Strongsville":["18200 Royalton Rd, Strongsville, OH 44136","9037 Pearl Rd, Strongsville, OH 44136"],
+    "Cranberry Twp":["1717 PA-228, Cranberry Twp, PA 16066","1329 Freedom Rd, Cranberry Twp, PA 16066"],
+    "Monroeville":["4004 Monroeville Blvd, Monroeville, PA 15146","4145 William Penn Hwy, Monroeville, PA 15146"],
+    "Hagerstown":["17213 Cole Rd, Hagerstown, MD 21740","17213 Cole Rd, Hagerstown, MD 21740"],
+    "Frederick":["5437 Urbana Pike, Frederick, MD 21704","5500 Buckeystown Pike, Frederick, MD 21703"],
+    "Gaithersburg":["25 Grand Corner Ave, Gaithersburg, MD 20878","9811 Washingtonian Blvd, Gaithersburg, MD 20878"],
+    "McLean / Tysons":["1825 Capital One Dr, McLean, VA 22102","8000 Tysons Corner Center, Tysons, VA 22102"],
+    "Fredericksburg":["1180 Carl D Silver Pkwy, Fredericksburg, VA 22401","137 Spotsylvania Mall Dr, Fredericksburg, VA 22407"],
+    "Richmond / White Oak":["4521 S Laburnum Ave, Richmond, VA 23231","4441 S Laburnum Ave, Richmond, VA 23231"],
+    "Williamsburg":["4630 Monticello Ave, Williamsburg, VA 23188","4630 Monticello Ave, Williamsburg, VA 23188"],
+    "Newport News":["12130 Jefferson Ave, Newport News, VA 23602","12401 Jefferson Ave, Newport News, VA 23602"],
+    "Chesapeake":["1316 Greenbrier Pkwy, Chesapeake, VA 23320","101 Hillcrest Pkwy, Chesapeake, VA 23322"],
+    "Nags Head lodging":["8413 S Old Oregon Inlet Rd, Nags Head, NC 27959","5000 S Croatan Hwy, Nags Head, NC 27959"]
+  };
+  Array.prototype.forEach.call(document.querySelectorAll('table.resp tbody tr'),function(tr){
+    var stopCell=tr.querySelector('td.stop'); if(!stopCell) return;
+    var chargerCell=tr.querySelector('td.charger'); if(!chargerCell) return;
+    if(!chargerCell.querySelector('a.navq')) return;            // leg tables only (glance has no navq links)
+    var nmEl=stopCell.querySelector('.nm'); if(!nmEl) return;
+    var pair=STOPMAP[norm(nmEl.textContent.trim())]; if(!pair) return;
+    var mr=document.createElement('tr'); mr.className='maprow'; mr.hidden=true;
+    var td=document.createElement('td'); td.colSpan=tr.cells.length;
+    var wrap=document.createElement('div'); wrap.className='stopmap-wrap';
+    td.appendChild(wrap); mr.appendChild(td);
+    if(tr.nextSibling){ tr.parentNode.insertBefore(mr,tr.nextSibling); } else { tr.parentNode.appendChild(mr); }
+    var btn=document.createElement('button'); btn.type='button'; btn.className='mapbtn';
+    btn.innerHTML='&#128506;&#65039; Target &rarr; charger';
+    btn.addEventListener('click',function(){
+      if(mr.hidden){
+        if(!wrap.getAttribute('data-loaded')){
+          var fr=encodeURIComponent(pair[0]), to=encodeURIComponent(pair[1]);
+          var ifr=document.createElement('iframe'); ifr.loading='lazy'; ifr.title='Target to charger directions';
+          ifr.src='https://maps.google.com/maps?saddr='+fr+'&daddr='+to+'&output=embed';
+          wrap.appendChild(ifr); wrap.setAttribute('data-loaded','1');
+        }
+        mr.hidden=false; btn.classList.add('open');
+      } else { mr.hidden=true; btn.classList.remove('open'); }
+    });
+    chargerCell.appendChild(document.createElement('br'));
+    chargerCell.appendChild(btn);
   });
 })();
 </script>
