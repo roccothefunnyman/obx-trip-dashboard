@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>OBX Trip Dashboard — Strongsville to Nags Head</title>
+<script>
+  /* set theme before paint to avoid flash */
+  (function(){
+    var t=localStorage.getItem('obx-theme');
+    if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';}
+    document.documentElement.setAttribute('data-theme',t);
+  })();
+</script>
+<style>
+  :root, :root[data-theme="dark"]{
+    --bg:#0e1116; --surface:#171c24; --surface2:#1f2630; --line:#2a323d;
+    --text:#e7edf3; --muted:#9aa7b4; --faint:#6b7682;
+    --accent:#34d399;
+    --ccs:#34d399;        /* native CCS - best */
+    --tesla:#60a5fa;      /* Tesla via adapter */
+    --verify:#fbbf24;     /* verify */
+    --warn:#f87171;
+    --tgt:#ff5a5a;        /* Target red (brightened for dark) */
+    --soc-fill:#34d399; --soc-low:#f87171; --soc-track:#222b35;
+    --hero-a:#19222e; --hero-b:#141a22;
+    --charge-fg:#0e1116;
+  }
+  :root[data-theme="light"]{
+    --bg:#f4f6f9; --surface:#ffffff; --surface2:#eef2f7; --line:#d8dee7;
+    --text:#1a2330; --muted:#566373; --faint:#8a97a6;
+    --accent:#0f9d63;
+    --ccs:#0f9d63;
+    --tesla:#2563eb;
+    --verify:#b7791f;
+    --warn:#dc2626;
+    --tgt:#cc0000;        /* Target brand red */
+    --soc-fill:#0f9d63; --soc-low:#dc2626; --soc-track:#e2e8f0;
+    --hero-a:#e9f3ed; --hero-b:#f4f6f9;
+    --charge-fg:#ffffff;
+  }
+  *{box-sizing:border-box}
+  body,.card,.stat,header.hero,.chip,td,th,.btn,.themebtn,.callout{
+    transition:background-color .25s ease,color .25s ease,border-color .25s ease}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px 20px 80px}
+
+  header.hero{position:relative;border:1px solid var(--line);
+    background:linear-gradient(160deg,var(--hero-a),var(--hero-b));
+    border-radius:16px;padding:24px 26px;margin-bottom:22px}
+  .hero h1{margin:0 0 4px;font-size:26px;letter-spacing:-0.3px}
+  .hero .sub{color:var(--muted);font-size:14px;margin-bottom:18px;max-width:78%}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .stat .k{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--faint)}
+  .stat .v{font-size:19px;font-weight:650;margin-top:3px}
+  .stat .v small{font-size:12px;color:var(--muted);font-weight:400}
+
+  .themebtn{position:absolute;top:16px;right:16px;display:inline-flex;align-items:center;gap:7px;
+    padding:7px 13px;border:1px solid var(--line);border-radius:999px;background:var(--surface);
+    color:var(--text);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
+  .themebtn:hover{border-color:var(--accent)}
+
+  h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);
+    margin:30px 4px 12px;display:flex;align-items:center;gap:10px}
+  h2.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:18px 18px 6px;margin-bottom:18px}
+  .legtitle{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin:2px 2px 14px}
+  .legtitle .name{font-size:18px;font-weight:650}
+  .legtitle .meta{color:var(--muted);font-size:13px}
+  .legtitle .route{color:var(--faint);font-size:12px;font-family:ui-monospace,Menlo,Consolas,monospace}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;color:var(--faint);font-weight:600;font-size:11px;text-transform:uppercase;
+    letter-spacing:.5px;padding:8px 10px;border-bottom:1px solid var(--line)}
+  td{padding:11px 10px;border-bottom:1px solid var(--surface2);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .stop .nm{font-weight:650}
+  .stop .ad{color:var(--faint);font-size:11.5px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .mi{font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
+
+  .chip{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;
+    border:1px solid transparent;white-space:nowrap;line-height:1.5}
+  .chip.ccs{color:var(--ccs);border:1px solid var(--ccs);
+    border-color:color-mix(in srgb,var(--ccs) 45%,transparent);
+    background:color-mix(in srgb,var(--ccs) 15%,transparent)}
+  .chip.tesla{color:var(--tesla);border:1px solid var(--tesla);
+    border-color:color-mix(in srgb,var(--tesla) 45%,transparent);
+    background:color-mix(in srgb,var(--tesla) 15%,transparent)}
+  .chip.verify{color:var(--verify);border:1px solid var(--verify);
+    border-color:color-mix(in srgb,var(--verify) 45%,transparent);
+    background:color-mix(in srgb,var(--verify) 15%,transparent)}
+  .chip.tgt{color:var(--tgt);border:1px solid var(--tgt);
+    border-color:color-mix(in srgb,var(--tgt) 50%,transparent);
+    background:color-mix(in srgb,var(--tgt) 13%,transparent)}
+  .chip.xtgt{color:var(--faint);border-color:var(--line);background:var(--surface2)}
+  .chip.home{color:var(--muted);border-color:var(--line);background:var(--surface2)}
+  .chip.charge{color:var(--charge-fg);background:var(--ccs);font-weight:700}
+  .chip.opt{color:var(--faint);border-color:var(--line);background:transparent}
+
+  .soc{display:flex;align-items:center;gap:8px;min-width:140px}
+  .bar{flex:1;height:8px;border-radius:6px;background:var(--soc-track);overflow:hidden;min-width:70px}
+  .bar > i{display:block;height:100%;border-radius:6px;background:var(--soc-fill)}
+  .bar.low > i{background:var(--soc-low)}
+  .soc .pct{font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--muted);width:34px;text-align:right}
+  .arrow{color:var(--faint);font-size:11px}
+  .to{color:var(--ccs);font-weight:650;font-variant-numeric:tabular-nums}
+
+  .note{color:var(--muted);font-size:12.5px}
+  .charger a{color:var(--text)}
+  .charger .dist{color:var(--faint);font-size:11.5px}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){
+    .hero .sub{max-width:100%}
+    .grid2{grid-template-columns:1fr}
+    table.resp thead{display:none}
+    table.resp,table.resp tbody,table.resp tr,table.resp td{display:block;width:100%}
+    table.resp tr{border:1px solid var(--line);border-radius:10px;margin-bottom:10px;padding:6px 4px}
+    table.resp td{border:none;padding:6px 12px}
+    table.resp td::before{content:attr(data-l);display:block;font-size:10px;text-transform:uppercase;
+      letter-spacing:.5px;color:var(--faint);margin-bottom:2px}
+  }
+
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted);margin:0 4px 16px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+
+  .callout{border:1px solid var(--line);border-left:3px solid var(--verify);background:var(--surface2);
+    border-radius:10px;padding:12px 14px;font-size:13px;color:var(--muted);margin:6px 2px 14px}
+  .callout.warn{border-left-color:var(--warn)}
+  .callout b{color:var(--text)}
+
+  ul.items{margin:6px 2px;padding-left:18px;color:var(--muted);font-size:13.5px}
+  ul.items li{margin-bottom:6px}
+  .done{color:var(--faint);text-decoration:line-through}
+
+  footer{color:var(--faint);font-size:12px;margin-top:26px;padding-top:14px;border-top:1px solid var(--line)}
+  .btn{display:inline-block;margin:2px 8px 2px 0;padding:8px 14px;border:1px solid var(--line);
+    border-radius:10px;background:var(--surface2);color:var(--text);font-size:13px;font-weight:600}
+  .btn:hover{border-color:var(--accent);text-decoration:none}
+
+  /* tap-to-navigate pills + maps chooser sheet */
+  .chip.nav,.navq{cursor:pointer}
+  .chip.nav:hover{filter:brightness(1.08)}
+  .chip.nav:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .navsheet{position:fixed;inset:0;z-index:60;display:none;align-items:flex-end;justify-content:center}
+  .navsheet.open{display:flex}
+  .navsheet .backdrop{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+  .navsheet .sheet{position:relative;width:100%;max-width:460px;background:var(--surface);
+    border:1px solid var(--line);border-radius:16px 16px 0 0;padding:16px 16px 22px;
+    box-shadow:0 -8px 40px rgba(0,0,0,.45);animation:navup .18s ease}
+  @keyframes navup{from{transform:translateY(22px);opacity:.3}to{transform:translateY(0);opacity:1}}
+  @media(min-width:560px){.navsheet{align-items:center}
+    .navsheet .sheet{border-radius:16px}}
+  .navsheet h3{margin:2px 0 4px;font-size:16px}
+  .navsheet .addr{color:var(--muted);font-size:12.5px;margin-bottom:14px;
+    font-family:ui-monospace,Menlo,Consolas,monospace}
+  .navsheet a.app,.navsheet button.app{display:flex;align-items:center;gap:11px;width:100%;
+    text-align:left;padding:13px 14px;margin-bottom:9px;border:1px solid var(--line);border-radius:12px;
+    background:var(--surface2);color:var(--text);font-size:15px;font-weight:600;cursor:pointer;
+    font-family:inherit;text-decoration:none}
+  .navsheet a.app:hover,.navsheet button.app:hover{border-color:var(--accent);text-decoration:none}
+  .navsheet .ic{font-size:18px;width:22px;text-align:center}
+  .navsheet .cancel{display:block;width:100%;text-align:center;padding:11px;margin-top:2px;
+    background:transparent;border:none;color:var(--muted);font-size:14px;font-weight:600;
+    cursor:pointer;font-family:inherit}
+  /* embedded maps */
+  .routemap{width:100%;height:420px;border:0;display:block;background:var(--surface2)}
+  @media(max-width:760px){.routemap{height:300px}}
+  .navsheet .navmap{margin:2px 0 12px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .navsheet .navmap iframe{width:100%;height:180px;border:0;display:block;background:var(--surface2)}
+  .mapnote{color:var(--faint);font-size:11.5px;margin:8px 2px 0}
+  .mapbtn{display:inline-block;margin-top:8px;padding:3px 9px;border:1px solid var(--line);border-radius:999px;
+    background:var(--surface2);color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
+  .mapbtn:hover{border-color:var(--accent);color:var(--text)}
+  .mapbtn.open{border-color:var(--accent);color:var(--accent)}
+  .maprow > td{padding:0 10px 12px}
+  .maprow td::before{display:none}
+  .stopmap-wrap{border:1px solid var(--line);border-radius:12px;overflow:hidden;max-width:520px}
+  .stopmap-wrap iframe{width:100%;height:220px;border:0;display:block;background:var(--surface2)}
+  .maprow .maplink{display:inline-block;margin-top:9px;font-size:12px;font-weight:600}
+
+  /* --- glanceability + wider use of screen --- */
+  .wrap{max-width:1200px}
+  table{font-size:14px}
+  .stop .nm{font-size:15px}
+  .mi{font-size:14px;font-weight:700;color:var(--text)}
+  .bar{height:10px}
+  .soc{min-width:150px}
+  .soc .pct{font-size:13.5px;width:38px}
+  /* action (charge) stops pop; optional stops recede -- needs :has (iPad Safari 16.4+/modern Chrome) */
+  tr:has(.chip.charge){background:color-mix(in srgb,var(--ccs) 9%,transparent);box-shadow:inset 4px 0 0 var(--ccs)}
+  tr:has(.chip.charge) .stop .nm{font-size:16.5px}
+  tr:has(.chip.charge) .arrow{font-size:12px;color:var(--muted)}
+  tr:has(.chip.charge) .to{font-size:16px}
+  tr:has(.chip.charge) .to::before{content:"\26A1 "}
+  tr:has(.chip.opt){opacity:.58}
+  tr:has(.chip.opt):hover{opacity:1}
+
+  /* --- progress tracking (where am I) --- */
+  .progchip{display:inline-block;margin-top:8px;padding:3px 10px;border:1px solid var(--line);border-radius:999px;
+    background:transparent;color:var(--faint);font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit}
+  .progchip:hover{border-color:var(--accent);color:var(--text)}
+  .progchip.done,.progchip.took{color:var(--ccs);border-color:color-mix(in srgb,var(--ccs) 50%,transparent);
+    background:color-mix(in srgb,var(--ccs) 14%,transparent)}
+  .progchip.skip{color:var(--muted);border-color:var(--line);background:var(--surface2)}
+  .nextbadge{display:inline-block;margin-right:8px;padding:2px 8px;border-radius:6px;background:var(--accent);
+    color:var(--charge-fg);font-size:10.5px;font-weight:800;letter-spacing:.5px;vertical-align:middle}
+  tr.is-next{opacity:1 !important;box-shadow:inset 0 0 0 2px var(--accent) !important}
+  tr.is-done,tr.is-took,tr.is-skip,tr.is-passed{opacity:.45 !important}
+  .progreset{margin-left:auto;padding:4px 11px;border:1px solid var(--line);border-radius:999px;
+    background:var(--surface);color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
+  .progreset:hover{border-color:var(--accent);color:var(--text)}
+  /* --- live location --- */
+  .geobtn{margin-left:auto;padding:4px 11px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
+  .geobtn:hover{border-color:var(--accent);color:var(--text)}
+  .geobtn.on{color:var(--ccs);border-color:color-mix(in srgb,var(--ccs) 55%,transparent);background:color-mix(in srgb,var(--ccs) 14%,transparent)}
+  .geodist{display:block;margin-top:6px;font-size:12px;font-weight:600;color:var(--muted)}
+  .geodist.near{color:var(--ccs)}
+  .geodist.past{color:var(--faint);font-weight:500}
+  #geobar{margin:0 4px 16px;padding:11px 15px;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;background:var(--surface2);color:var(--text);font-size:14px;font-weight:650}
+  #geobar.near{border-left-color:var(--ccs);background:color-mix(in srgb,var(--ccs) 12%,transparent)}
+  #geobar.err{border-left-color:var(--warn);font-weight:500;color:var(--muted)}
+  .progchip.passed{color:var(--verify);border-color:color-mix(in srgb,var(--verify) 50%,transparent);background:color-mix(in srgb,var(--verify) 14%,transparent)}
+
+  /* --- big, glanceable text on tablet/laptop (iPad landscape & portrait, laptop) --- */
+  @media(min-width:768px){
+    .wrap{padding:24px 24px 90px}
+    table{font-size:18px}
+    td{padding:15px 12px}
+    .stop .nm{font-size:21px}
+    .stop .ad{font-size:13.5px}
+    tr:has(.chip.charge) .stop .nm{font-size:25px}
+    .mi{font-size:20px}
+    .soc{min-width:200px}
+    .bar{height:14px}
+    .soc .pct{font-size:19px;width:48px}
+    .arrow{font-size:14px}
+    .to{font-size:19px}
+    tr:has(.chip.charge) .to{font-size:25px}
+    tr:has(.chip.charge) .arrow{font-size:15px}
+    .note{font-size:15px}
+    .chip{font-size:13px;padding:3px 11px}
+    .chip.charge{font-size:14px}
+    .nextbadge{font-size:13px;padding:3px 10px;letter-spacing:1px}
+    .progchip{font-size:14.5px;padding:6px 14px;margin-top:10px}
+    .geodist{font-size:17px;margin-top:9px}
+    .mapbtn{font-size:13px;padding:5px 13px}
+    .maprow .maplink{font-size:15px}
+    .charger .dist{font-size:13.5px}
+    #geobar{font-size:23px;padding:15px 19px;font-weight:700}
+    .legend{font-size:14px}
+    .legtitle .name{font-size:23px}
+    .legtitle .meta{font-size:15px}
+    .legtitle .route{font-size:13px}
+    h2.sec{font-size:14px}
+    .stat .k{font-size:12px}
+    .stat .v{font-size:24px}
+    .hero h1{font-size:32px}
+    .hero .sub{font-size:16px}
+    .callout{font-size:14.5px}
+    .mapnote{font-size:13.5px}
+  }
+</style>
+<style id="devskin">
+/* ===== /dev - iPad card skin (overrides table layout; reuses all JS) ===== */
+.wrap{max-width:920px;padding:22px 18px 90px}
+table.resp thead{display:none}
+table.resp, table.resp tbody, table.resp tr, table.resp td{display:block;width:100%}
+table.resp tr{border:1px solid var(--line);border-radius:16px;margin:0 0 14px;padding:16px 18px;background:var(--surface)}
+table.resp td{border:none !important;padding:5px 0}
+table.resp td::before{content:attr(data-l);display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--faint);margin-bottom:3px}
+table.resp td.stop::before{display:none}
+.stop .nm{font-size:26px;line-height:1.15}
+tr:has(.chip.charge) .stop .nm{font-size:30px}
+.stop .ad{font-size:17px;margin-top:4px}
+.mi{font-size:22px;color:var(--text);font-weight:700}
+.soc{min-width:0;gap:12px}
+.bar{height:16px}
+.soc .pct{font-size:22px;width:auto;min-width:48px}
+.arrow{font-size:16px}
+.to{font-size:24px}
+tr:has(.chip.charge) .to{font-size:30px}
+.note{font-size:17px}
+.charger{font-size:18px;line-height:1.4}
+.charger .dist{font-size:15px}
+.chip{font-size:14px;padding:4px 12px}
+.geodist{font-size:20px}
+.progchip{font-size:16px;padding:7px 16px;margin-top:12px}
+.mapbtn{font-size:15px;padding:7px 15px}
+.maprow .maplink{font-size:17px}
+#geobar{font-size:26px;padding:18px 22px}
+.legtitle{gap:6px 14px}
+.legtitle .name{font-size:30px}
+.legtitle .meta{font-size:18px}
+.legtitle .route{font-size:16px;line-height:1.5}
+.legend{font-size:15px;gap:12px 16px}
+.callout{font-size:17px}
+.stat .v{font-size:28px}
+.stat .k{font-size:12px}
+.hero h1{font-size:36px}
+.hero .sub{font-size:18px;max-width:100%}
+tr:has(.chip.charge){box-shadow:inset 5px 0 0 var(--ccs) !important}
+tr.is-next{box-shadow:inset 0 0 0 3px var(--accent) !important}
+.maprow{border:none !important;background:transparent !important;padding:0 !important;margin:-6px 0 14px !important}
+.stopmap-wrap{max-width:none}
+.stopmap-wrap iframe{height:260px}
+body::before{content:"DEV PREVIEW - experimental iPad layout";display:block;text-align:center;background:var(--verify);color:#0e1116;font-weight:800;font-size:13px;letter-spacing:.5px;padding:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <button class="themebtn" id="themeBtn" type="button" aria-label="Toggle dark and light mode">&#9728; Light</button>
+    <h1>Outer Banks Road Trip</h1>
+    <div class="sub">Strongsville, OH &rarr; overnight in McLean/Tysons, VA &rarr; Nags Head, NC &nbsp;&bull;&nbsp; Depart Jul 10, 2026 &bull; Return Jul 17/18 (TBD)</div>
+    <div class="stats">
+      <div class="stat"><div class="k">Total one-way</div><div class="v">646 <small>mi</small></div></div>
+      <div class="stat"><div class="k">Drive time</div><div class="v">~10h15 <small>+ charging</small></div></div>
+      <div class="stat"><div class="k">Vehicle</div><div class="v">Macan 4 EV <small>~95 kWh</small></div></div>
+      <div class="stat"><div class="k">Start charge</div><div class="v">99<small>%</small></div></div>
+      <div class="stat"><div class="k">DC stops</div><div class="v">3 <small>+ overnight</small></div></div>
+      <div class="stat"><div class="k">Connector</div><div class="v">CCS1 <small>/ NACS adapter</small></div></div>
+    </div>
+  </header>
+
+  <div class="legend">
+    <span><i class="dot" style="background:var(--tgt)"></i> Target store stop</span>
+    <span><i class="dot" style="background:var(--ccs)"></i> Native CCS (best, full speed)</span>
+    <span><i class="dot" style="background:var(--tesla)"></i> Tesla Supercharger (adapter, ~120&ndash;135 kW)</span>
+    <span><i class="dot" style="background:var(--verify)"></i> Verify power/access</span>
+    <span><i class="dot" style="background:var(--soc-low)"></i> Low arrival SOC</span>
+  </div>
+  <div class="note" style="margin:-6px 4px 16px">Tip: tap any <b style="color:var(--tgt)">&#9678; Target</b> pill, the Hotel/Lodging pill, or a charger name to open that address in Apple Maps, Google Maps, or Waze.</div>
+
+  <h2 class="sec">Route map</h2>
+  <div class="card" style="padding:0;overflow:hidden">
+    <iframe class="routemap" loading="lazy" title="Full trip route map" src="https://maps.google.com/maps?saddr=Strongsville,+OH+44149&daddr=17213+Cole+Rd,+Hagerstown,+MD+to:1825+Capital+One+Dr,+McLean,+VA+to:12130+Jefferson+Ave,+Newport+News,+VA+to:8413+S+Old+Oregon+Inlet+Rd,+Nags+Head,+NC&output=embed"></iframe>
+  </div>
+  <div class="mapnote">Embedded maps load from Google and always render in light mode. Tap a stop pill or charger name for a location preview, or use the <b>&#128506;&#65039; Target &rarr; charger</b> button in each stop for the last-mile route.</div>
+
+  <!-- ===================== CHARGING PLAN SUMMARY ===================== -->
+  <h2 class="sec">Charging plan at a glance</h2>
+  <div class="card">
+    <table class="resp">
+      <thead><tr><th>Charge</th><th>Where</th><th>Arrive</th><th>Charge to</th><th>Charger</th><th>~Time</th></tr></thead>
+      <tbody>
+        <tr>
+          <td data-l="Charge"><span class="chip charge">DC&nbsp;1</span></td>
+          <td data-l="Where" class="stop"><span class="nm">Monroeville, PA</span> <span class="chip tgt nav" role="button" tabindex="0">&#9678; Target</span><div class="ad">142 mi in &bull; last Target before the mountains</div></td>
+          <td data-l="Arrive"><div class="soc"><div class="bar low"><i style="width:28%"></i></div><span class="pct">28%</span></div></td>
+          <td data-l="Charge to"><span class="to">100%</span></td>
+          <td data-l="Charger" class="charger">EVgo / Tesla SC <span class="chip verify">verify kW</span></td>
+          <td data-l="Time" class="mi">~15&ndash;20 min</td>
+        </tr>
+        <tr>
+          <td data-l="Charge"><span class="chip charge">DC&nbsp;2</span></td>
+          <td data-l="Where" class="stop"><span class="nm">Hagerstown, MD</span> <span class="chip tgt nav" role="button" tabindex="0">&#9678; Target</span><div class="ad">299 mi in &bull; Tesla SC in the Target lot</div></td>
+          <td data-l="Arrive"><div class="soc"><div class="bar low"><i style="width:20%"></i></div><span class="pct">~20%</span></div></td>
+          <td data-l="Charge to"><span class="to">80%</span></td>
+          <td data-l="Charger" class="charger">Tesla Supercharger <span class="chip tesla">adapter</span></td>
+          <td data-l="Time" class="mi">~25 min</td>
+        </tr>
+        <tr>
+          <td data-l="Charge"><span class="chip home">night</span></td>
+          <td data-l="Where" class="stop"><span class="nm">McLean / Tysons, VA</span> <span class="chip xtgt nav" role="button" tabindex="0">&#9711; Hotel</span><div class="ad">363 mi &bull; overnight &bull; top up for Leg 2</div></td>
+          <td data-l="Arrive"><div class="soc"><div class="bar"><i style="width:48%"></i></div><span class="pct">48%</span></div></td>
+          <td data-l="Charge to"><span class="to">~100%</span></td>
+          <td data-l="Charger" class="charger">Tysons Corner EA (~2 mi) or hotel <span class="chip ccs">CCS</span></td>
+          <td data-l="Time" class="mi">overnight</td>
+        </tr>
+        <tr>
+          <td data-l="Charge"><span class="chip charge">DC&nbsp;3</span></td>
+          <td data-l="Where" class="stop"><span class="nm">Newport News, VA</span> <span class="chip tgt nav" role="button" tabindex="0">&#9678; Target</span><div class="ad">167 mi into Leg 2 &bull; full-speed EA</div></td>
+          <td data-l="Arrive"><div class="soc"><div class="bar low"><i style="width:17%"></i></div><span class="pct">17%</span></div></td>
+          <td data-l="Charge to"><span class="to">80%</span></td>
+          <td data-l="Charger" class="charger">Electrify America <span class="chip ccs">150&ndash;350 kW</span></td>
+          <td data-l="Time" class="mi">~20 min</td>
+        </tr>
+        <tr>
+          <td data-l="Charge"><span class="chip home">arrive</span></td>
+          <td data-l="Where" class="stop"><span class="nm">Nags Head lodging</span> <span class="chip xtgt nav" role="button" tabindex="0">&#9711; Lodging</span><div class="ad">283 mi &bull; 8413 S Old Oregon Inlet Rd</div></td>
+          <td data-l="Arrive"><div class="soc"><div class="bar low"><i style="width:22%"></i></div><span class="pct">22%</span></div></td>
+          <td data-l="Charge to"><span class="note">on-island as needed</span></td>
+          <td data-l="Charger" class="charger">Nags Head Tesla SC (~4 mi) <span class="chip tesla">adapter</span></td>
+          <td data-l="Time" class="mi">&mdash;</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout">SOC figures now assume a <b>sustained 80&ndash;85 mph</b>: ~95 kWh usable at ~2.0 mi per 1% (&asymp;475 Wh/mi with AC and a full car). That is deliberately conservative; at a more typical 70&ndash;75 mph you would arrive noticeably higher. One DC stop is filled to 100% (Monroeville) to clear the long mountain stretch. Lock the exact plan in <b>A Better Route Planner</b> with the Macan 4 profile, your real speed, and live weather.</div>
+
+  <!-- ===================== LEG 1 ===================== -->
+  <h2 class="sec">Leg 1 &middot; Strongsville &rarr; McLean</h2>
+  <div class="card">
+    <div class="legtitle">
+      <span class="name">363 mi</span>
+      <span class="meta">~5h39 driving &bull; 2 DC charges</span>
+      <span class="route">OH Tpke &rarr; I-76 &rarr; I-70 &rarr; I-270</span>
+    </div>
+    <table class="resp">
+      <thead><tr><th>Stop &amp; Target</th><th>Mile</th><th>Plan</th><th>SOC</th><th>Best &ge;75 kW charger</th></tr></thead>
+      <tbody>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Strongsville</span> <span class="chip tgt nav" role="button" tabindex="0">&#9678; Target</span> <span class="chip home">start</span><div class="ad">18200 Royalton Rd</div></td>
+          <td data-l="Mile" class="mi">0</td>
+          <td data-l="Plan"><span class="note">Leave home at 99%</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar"><i style="width:99%"></i></div><span class="pct">99%</span></div></td>
+          <td data-l="Charger" class="charger">Home charge. Backup: <a class="navq" data-q="9037 Pearl Rd, Strongsville, OH 44136">Pearl Rd Tesla SC + Rivian</a> <span class="dist">~1.8 mi</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Cranberry Twp</span> <span class="chip tgt nav" role="button" tabindex="0">&#9678; Target</span> <span class="chip opt">optional</span><div class="ad">1717 PA-228</div></td>
+          <td data-l="Mile" class="mi">115</td>
+          <td data-l="Plan"><span class="note">Bathroom only</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar"><i style="width:42%"></i></div><span class="pct">42%</span></div></td>
+          <td data-l="Charger" class="charger"><a class="navq" data-q="1329 Freedom Rd, Cranberry Twp, PA 16066">Electrify America</a> <span class="chip ccs">CCS</span> <span class="dist">~1.1 mi</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Monroeville</span> <span class="chip tgt nav" role="button" tabindex="0">&#9678; Target</span> <span class="chip charge">DC 1</span><div class="ad">4004 Monroeville Blvd</div></td>
+          <td data-l="Mile" class="mi">142</td>
+          <td data-l="Plan"><span class="arrow">arrive 28%</span> <span class="to">&rarr; 100%</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar low"><i style="width:28%"></i></div><span class="pct">28%</span></div></td>
+          <td data-l="Charger" class="charger"><a class="navq" data-q="4145 William Penn Hwy, Monroeville, PA 15146">EVgo</a> <span class="dist">~0.5 mi</span> / <a class="navq" data-q="317 Old Haymaker Rd, Monroeville, PA 15146">Tesla SC</a> ~1 mi <span class="chip verify">verify kW</span></td>
+        </tr>
+        <tr>
+          <td colspan="5" class="note" style="text-align:center;color:var(--faint);font-style:italic">&darr; 157 mi over the Alleghenies, no Target &bull; turnpike service plazas have charging if you want margin &darr;</td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Hagerstown</span> <span class="chip tgt nav" role="button" tabindex="0">&#9678; Target</span> <span class="chip charge">DC 2</span><div class="ad">17213 Cole Rd</div></td>
+          <td data-l="Mile" class="mi">299</td>
+          <td data-l="Plan"><span class="arrow">arrive ~20%</span> <span class="to">&rarr; 80%</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar low"><i style="width:20%"></i></div><span class="pct">~20%</span></div></td>
+          <td data-l="Charger" class="charger"><a class="navq" data-q="17213 Cole Rd, Hagerstown, MD 21740">Tesla SC in the Target lot</a> <span class="chip tesla">adapter</span> <span class="dist">&lt;0.1 mi</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Frederick</span> <span class="chip tgt nav" role="button" tabindex="0">&#9678; Target</span> <span class="chip opt">optional</span><div class="ad">5437 Urbana Pike</div></td>
+          <td data-l="Mile" class="mi">327</td>
+          <td data-l="Plan"><span class="note">Bathroom only</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar"><i style="width:66%"></i></div><span class="pct">66%</span></div></td>
+          <td data-l="Charger" class="charger"><a class="navq" data-q="5500 Buckeystown Pike, Frederick, MD 21703">Tesla SC</a> ~0.4 mi / <a class="navq" data-q="7400 Guilford Dr, Frederick, MD 21704">EA</a> ~1.1 mi <span class="chip ccs">CCS</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Gaithersburg</span> <span class="chip tgt nav" role="button" tabindex="0">&#9678; Target</span> <span class="chip opt">optional</span><div class="ad">25 Grand Corner Ave</div></td>
+          <td data-l="Mile" class="mi">348</td>
+          <td data-l="Plan"><span class="note">Bathroom only</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar"><i style="width:56%"></i></div><span class="pct">56%</span></div></td>
+          <td data-l="Charger" class="charger"><a class="navq" data-q="9811 Washingtonian Blvd, Gaithersburg, MD 20878">Tesla SC adjacent</a> + EVgo + IONNA <span class="chip tesla">adapter</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">McLean / Tysons</span> <span class="chip xtgt nav" role="button" tabindex="0">&#9711; Hotel</span> <span class="chip home">overnight</span><div class="ad">1825 Capital One Dr</div></td>
+          <td data-l="Mile" class="mi">363</td>
+          <td data-l="Plan"><span class="arrow">arrive 48%</span> <span class="to">&rarr; ~100%</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar"><i style="width:48%"></i></div><span class="pct">48%</span></div></td>
+          <td data-l="Charger" class="charger"><a class="navq" data-q="8000 Tysons Corner Center, Tysons, VA 22102">Tysons Corner EA</a> <span class="dist">~2 mi</span> or hotel <span class="chip ccs">CCS</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===================== LEG 2 ===================== -->
+  <h2 class="sec">Leg 2 &middot; McLean &rarr; Nags Head</h2>
+  <div class="card">
+    <div class="legtitle">
+      <span class="name">283 mi</span>
+      <span class="meta">~4h37 driving &bull; 1 DC charge</span>
+      <span class="route">I-95 &rarr; I-295 &rarr; I-64 &rarr; I-664 &rarr; VA-168 &rarr; US-158</span>
+    </div>
+    <table class="resp">
+      <thead><tr><th>Stop &amp; Target</th><th>Mile</th><th>Plan</th><th>SOC</th><th>Best &ge;75 kW charger</th></tr></thead>
+      <tbody>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">McLean / Tysons</span> <span class="chip xtgt nav" role="button" tabindex="0">&#9711; Hotel</span> <span class="chip home">start</span><div class="ad">1825 Capital One Dr</div></td>
+          <td data-l="Mile" class="mi">0</td>
+          <td data-l="Plan"><span class="note">Start ~100%</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar"><i style="width:100%"></i></div><span class="pct">100%</span></div></td>
+          <td data-l="Charger" class="charger"><span class="note">Topped up overnight</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Fredericksburg</span> <span class="chip tgt nav" role="button" tabindex="0">&#9678; Target</span> <span class="chip opt">optional</span><div class="ad">1180 Carl D Silver Pkwy</div></td>
+          <td data-l="Mile" class="mi">52</td>
+          <td data-l="Plan"><span class="note">Bathroom only</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar"><i style="width:74%"></i></div><span class="pct">74%</span></div></td>
+          <td data-l="Charger" class="charger"><a class="navq" data-q="137 Spotsylvania Mall Dr, Fredericksburg, VA 22407">Electrify America</a> <span class="chip ccs">CCS</span> <span class="dist">~0.4 mi, off I-95 exit 130</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Richmond / White Oak</span> <span class="chip tgt nav" role="button" tabindex="0">&#9678; Target</span> <span class="chip opt">optional</span><div class="ad">4521 S Laburnum Ave</div></td>
+          <td data-l="Mile" class="mi">112</td>
+          <td data-l="Plan"><span class="note">Bathroom only</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar"><i style="width:44%"></i></div><span class="pct">44%</span></div></td>
+          <td data-l="Charger" class="charger"><a class="navq" data-q="4441 S Laburnum Ave, Richmond, VA 23231">Tesla SC adjacent</a> <span class="chip tesla">adapter</span> <span class="dist">~0.2 mi, I-64 exit 195</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Williamsburg</span> <span class="chip tgt nav" role="button" tabindex="0">&#9678; Target</span> <span class="chip opt">optional</span><div class="ad">4630 Monticello Ave</div></td>
+          <td data-l="Mile" class="mi">152</td>
+          <td data-l="Plan"><span class="note">Backup charge</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar low"><i style="width:24%"></i></div><span class="pct">24%</span></div></td>
+          <td data-l="Charger" class="charger"><a class="navq" data-q="4630 Monticello Ave, Williamsburg, VA 23188">EVgo on-site</a> <span class="chip verify">verify kW</span> <span class="dist">~0.1 mi</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Newport News</span> <span class="chip tgt nav" role="button" tabindex="0">&#9678; Target</span> <span class="chip charge">DC 3</span><div class="ad">12130 Jefferson Ave</div></td>
+          <td data-l="Mile" class="mi">167</td>
+          <td data-l="Plan"><span class="arrow">arrive 17%</span> <span class="to">&rarr; 80%</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar low"><i style="width:17%"></i></div><span class="pct">17%</span></div></td>
+          <td data-l="Charger" class="charger"><a class="navq" data-q="12401 Jefferson Ave, Newport News, VA 23602">Electrify America</a> <span class="chip ccs">150&ndash;350 kW</span> <span class="dist">~1.2 mi</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Chesapeake</span> <span class="chip tgt nav" role="button" tabindex="0">&#9678; Target</span> <span class="chip opt">optional</span><div class="ad">1316 Greenbrier Pkwy</div></td>
+          <td data-l="Mile" class="mi">202</td>
+          <td data-l="Plan"><span class="note">Top-off only if needed</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar"><i style="width:63%"></i></div><span class="pct">63%</span></div></td>
+          <td data-l="Charger" class="charger">Target = bathroom/retail. <a class="navq" data-q="101 Hillcrest Pkwy, Chesapeake, VA 23322">Battlefield Blvd Tesla SC</a> ~7.8 mi S on VA-168 <span class="chip tesla">adapter</span></td>
+        </tr>
+        <tr>
+          <td data-l="Stop" class="stop"><span class="nm">Nags Head lodging</span> <span class="chip xtgt nav" role="button" tabindex="0">&#9711; Lodging</span> <span class="chip home">arrive</span><div class="ad">8413 S Old Oregon Inlet Rd</div></td>
+          <td data-l="Mile" class="mi">283</td>
+          <td data-l="Plan"><span class="arrow">arrive 22%</span></td>
+          <td data-l="SOC"><div class="soc"><div class="bar low"><i style="width:22%"></i></div><span class="pct">22%</span></div></td>
+          <td data-l="Charger" class="charger"><a class="navq" data-q="5000 S Croatan Hwy, Nags Head, NC 27959">Nags Head Tesla SC</a> ~4 mi N <span class="chip tesla">adapter</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout warn"><b>The pinch points (worse at 80&ndash;85 mph):</b> the 157-mi mountain stretch between Monroeville and Hagerstown is the tight one. Fill to 100% at Monroeville (you arrive Hagerstown around ~20%), and if it is hot or windy, splash-charge at a PA Turnpike plaza (Sideling Hill or Somerset). On Leg 2, an 80% charge at Newport News reaches the lodging at ~22%; top off at Chesapeake if your projection dips below ~20%.</div>
+
+  <!-- ===================== OBX ===================== -->
+  <h2 class="sec">On the island (no Target, Tesla/Rivian only for fast DC)</h2>
+  <div class="grid2">
+    <div class="card" style="margin-bottom:0">
+      <div class="stop"><span class="nm">Nags Head Tesla SC</span> <span class="chip tesla">adapter</span></div>
+      <div class="ad" style="font-family:ui-monospace,monospace;color:var(--faint);font-size:11.5px;margin:4px 0 8px">5000 S Croatan Hwy &bull; ~4 mi N of lodging</div>
+      <div class="note">Your main on-island charge during the stay. <a class="navq" data-q="5000 S Croatan Hwy, Nags Head, NC 27959">Open in maps</a></div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="stop"><span class="nm">Kill Devil Hills Tesla SC</span> <span class="chip tesla">adapter</span></div>
+      <div class="ad" style="font-family:ui-monospace,monospace;color:var(--faint);font-size:11.5px;margin:4px 0 8px">2012 S Croatan Hwy &bull; ~10 mi N</div>
+      <div class="note">Second Supercharger if Nags Head is busy. Rivian Adventure Network sits beside the Nags Head one (150 kW+ CCS, but verify non-Rivian access). <a class="navq" data-q="2012 S Croatan Hwy, Kill Devil Hills, NC 27948">Open in maps</a></div>
+    </div>
+  </div>
+
+  <!-- ===================== NOTES / ITEMS ===================== -->
+  <h2 class="sec">Before you go</h2>
+  <ul class="items">
+    <li>Pack the <b>Porsche NACS-to-CCS adapter</b> &mdash; Hagerstown, Richmond, Chesapeake, and the whole island lean on Tesla Superchargers.</li>
+    <li>Set up the <b>Tesla app</b> (Charge Your Non-Tesla) and an <b>Electrify America</b> account before leaving.</li>
+    <li>Verify exact kW on the EVgo units at <b>Monroeville</b> and <b>Williamsburg</b> in PlugShare (could be legacy 50 kW; Tesla SC backups are listed for both).</li>
+    <li>Confirm the McLean hotel's charging; if none, plan the overnight top-up at <b>Tysons Corner EA</b> (~2 mi).</li>
+    <li class="done">Map Targets + &ge;75 kW chargers for both legs</li>
+    <li class="done">Confirm lodging and build SOC plan for the Macan 4 Electric</li>
+  </ul>
+
+  <h2 class="sec">Open route in Google Maps</h2>
+  <div>
+    <a class="btn" target="_blank" href="https://www.google.com/maps/dir/?api=1&origin=Strongsville,+OH+44149&destination=1825+Capital+One+Dr,+McLean,+VA+22102&waypoints=4004+Monroeville+Blvd,+Monroeville,+PA%7C17213+Cole+Rd,+Hagerstown,+MD&travelmode=driving">Leg 1 directions &rarr;</a>
+    <a class="btn" target="_blank" href="https://www.google.com/maps/dir/?api=1&origin=1825+Capital+One+Dr,+McLean,+VA+22102&destination=8413+S+Old+Oregon+Inlet+Rd,+Nags+Head,+NC+27959&waypoints=12130+Jefferson+Ave,+Newport+News,+VA&travelmode=driving">Leg 2 directions &rarr;</a>
+  </div>
+
+  <footer>
+    Distances, charger locations, and the lodging pin pulled from Google Maps on 2026-06-15. SOC modeled on ~95 kWh usable at a conservative ~2.0 mi per 1% at a sustained 80&ndash;85 mph (a more typical 70&ndash;75 mph arrives higher). Charger power ratings inferred from network type where Google did not expose kW; verify the "verify kW" sites in PlugShare. Build the final energy plan in A Better Route Planner with the 2024 Porsche Macan 4 Electric profile.
+  </footer>
+
+</div>
+
+<script>
+  (function(){
+    var root=document.documentElement, btn=document.getElementById('themeBtn');
+    function label(){
+      var light = root.getAttribute('data-theme')==='light';
+      // show the action the button will take
+      btn.innerHTML = light ? '☾ Dark' : '☀ Light';
+    }
+    label();
+    btn.addEventListener('click', function(){
+      var next = root.getAttribute('data-theme')==='light' ? 'dark' : 'light';
+      root.setAttribute('data-theme', next);
+      try{ localStorage.setItem('obx-theme', next); }catch(e){}
+      label();
+    });
+  })();
+</script>
+
+<div class="navsheet" id="navSheet" role="dialog" aria-modal="true" aria-label="Open location in a maps app">
+  <div class="backdrop" data-close></div>
+  <div class="sheet">
+    <h3 id="navTitle">Open in maps</h3>
+    <div class="addr" id="navAddr"></div>
+    <div class="navmap"><iframe id="navMapFrame" loading="lazy" title="Map preview"></iframe></div>
+    <a class="app" id="navApple" target="_blank" rel="noopener"><span class="ic">&#127822;</span> Apple Maps</a>
+    <a class="app" id="navGoogle" target="_blank" rel="noopener"><span class="ic">&#128506;&#65039;</span> Google Maps</a>
+    <a class="app" id="navWaze" target="_blank" rel="noopener"><span class="ic">&#128663;</span> Waze</a>
+    <button class="app" id="navCopy" type="button"><span class="ic">&#128203;</span> Copy address</button>
+    <button class="cancel" type="button" data-close>Cancel</button>
+  </div>
+</div>
+<script>
+(function(){
+  var ADDR={
+    "Strongsville":"18200 Royalton Rd, Strongsville, OH 44136",
+    "Cranberry Twp":"1717 PA-228, Cranberry Twp, PA 16066",
+    "Monroeville":"4004 Monroeville Blvd, Monroeville, PA 15146",
+    "Hagerstown":"17213 Cole Rd, Hagerstown, MD 21740",
+    "Frederick":"5437 Urbana Pike, Frederick, MD 21704",
+    "Gaithersburg":"25 Grand Corner Ave, Gaithersburg, MD 20878",
+    "McLean / Tysons":"1825 Capital One Dr, McLean, VA 22102",
+    "Fredericksburg":"1180 Carl D Silver Pkwy, Fredericksburg, VA 22401",
+    "Richmond / White Oak":"4521 S Laburnum Ave, Richmond, VA 23231",
+    "Williamsburg":"4630 Monticello Ave, Williamsburg, VA 23188",
+    "Newport News":"12130 Jefferson Ave, Newport News, VA 23602",
+    "Chesapeake":"1316 Greenbrier Pkwy, Chesapeake, VA 23320",
+    "Nags Head lodging":"8413 S Old Oregon Inlet Rd, Nags Head, NC 27959"
+  };
+  var sheet=document.getElementById('navSheet');
+  var elTitle=document.getElementById('navTitle'), elAddr=document.getElementById('navAddr');
+  var aApple=document.getElementById('navApple'), aGoogle=document.getElementById('navGoogle'),
+      aWaze=document.getElementById('navWaze'), bCopy=document.getElementById('navCopy');
+  function norm(s){return s.replace(/,\s*[A-Z]{2}$/,'').trim();}
+  function openSheet(name,addr){
+    var e=encodeURIComponent(addr);
+    elTitle.textContent=name; elAddr.textContent=addr;
+    aApple.href='https://maps.apple.com/?q='+e;
+    aGoogle.href='https://www.google.com/maps/search/?api=1&query='+e;
+    aWaze.href='https://waze.com/ul?q='+e;
+    document.getElementById('navMapFrame').src='https://maps.google.com/maps?q='+e+'&z=15&output=embed';
+    sheet.classList.add('open');
+  }
+  function closeSheet(){sheet.classList.remove('open');var mf=document.getElementById('navMapFrame');if(mf)mf.src='about:blank';}
+  document.addEventListener('click',function(ev){
+    var pill=ev.target.closest && ev.target.closest('.chip.nav');
+    if(pill){
+      var cell=pill.closest('.stop'); if(!cell) return;
+      var nmEl=cell.querySelector('.nm'); if(!nmEl) return;
+      var name=nmEl.textContent.trim();
+      var addr=ADDR[norm(name)];
+      if(!addr) return;
+      ev.preventDefault(); openSheet(name,addr); return;
+    }
+    var cl=ev.target.closest && ev.target.closest('.navq');
+    if(cl){ ev.preventDefault(); openSheet(cl.textContent.trim(), cl.getAttribute('data-q')); return; }
+    if(ev.target.closest('a.app')){ closeSheet(); return; }
+    if(ev.target.closest('[data-close]')){ closeSheet(); }
+  });
+  bCopy.addEventListener('click',function(){
+    try{
+      navigator.clipboard.writeText(elAddr.textContent);
+      bCopy.innerHTML='<span class="ic">&#9989;</span> Copied';
+      setTimeout(function(){ bCopy.innerHTML='<span class="ic">&#128203;</span> Copy address'; },1500);
+    }catch(e){}
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){ closeSheet(); return; }
+    var a=document.activeElement;
+    if((e.key==='Enter'||e.key===' ') && a && a.classList && a.classList.contains('nav')){ e.preventDefault(); a.click(); }
+  });
+
+  // ---- per-stop "Target -> charger" expandable directions maps (leg tables only) ----
+  var STOPMAP={
+    "Strongsville":["18200 Royalton Rd, Strongsville, OH 44136","9037 Pearl Rd, Strongsville, OH 44136"],
+    "Cranberry Twp":["1717 PA-228, Cranberry Twp, PA 16066","1329 Freedom Rd, Cranberry Twp, PA 16066"],
+    "Monroeville":["4004 Monroeville Blvd, Monroeville, PA 15146","4145 William Penn Hwy, Monroeville, PA 15146"],
+    "Hagerstown":["17213 Cole Rd, Hagerstown, MD 21740","17213 Cole Rd, Hagerstown, MD 21740"],
+    "Frederick":["5437 Urbana Pike, Frederick, MD 21704","5500 Buckeystown Pike, Frederick, MD 21703"],
+    "Gaithersburg":["25 Grand Corner Ave, Gaithersburg, MD 20878","9811 Washingtonian Blvd, Gaithersburg, MD 20878"],
+    "McLean / Tysons":["1825 Capital One Dr, McLean, VA 22102","8000 Tysons Corner Center, Tysons, VA 22102"],
+    "Fredericksburg":["1180 Carl D Silver Pkwy, Fredericksburg, VA 22401","137 Spotsylvania Mall Dr, Fredericksburg, VA 22407"],
+    "Richmond / White Oak":["4521 S Laburnum Ave, Richmond, VA 23231","4441 S Laburnum Ave, Richmond, VA 23231"],
+    "Williamsburg":["4630 Monticello Ave, Williamsburg, VA 23188","4630 Monticello Ave, Williamsburg, VA 23188"],
+    "Newport News":["12130 Jefferson Ave, Newport News, VA 23602","12401 Jefferson Ave, Newport News, VA 23602"],
+    "Chesapeake":["1316 Greenbrier Pkwy, Chesapeake, VA 23320","101 Hillcrest Pkwy, Chesapeake, VA 23322"],
+    "Nags Head lodging":["8413 S Old Oregon Inlet Rd, Nags Head, NC 27959","5000 S Croatan Hwy, Nags Head, NC 27959"]
+  };
+  Array.prototype.forEach.call(document.querySelectorAll('table.resp tbody tr'),function(tr){
+    var stopCell=tr.querySelector('td.stop'); if(!stopCell) return;
+    var chargerCell=tr.querySelector('td.charger'); if(!chargerCell) return;
+    if(!chargerCell.querySelector('a.navq')) return;            // leg tables only (glance has no navq links)
+    var nmEl=stopCell.querySelector('.nm'); if(!nmEl) return;
+    var pair=STOPMAP[norm(nmEl.textContent.trim())]; if(!pair) return;
+    var mr=document.createElement('tr'); mr.className='maprow'; mr.hidden=true;
+    var td=document.createElement('td'); td.colSpan=tr.cells.length;
+    var wrap=document.createElement('div'); wrap.className='stopmap-wrap';
+    td.appendChild(wrap); mr.appendChild(td);
+    if(tr.nextSibling){ tr.parentNode.insertBefore(mr,tr.nextSibling); } else { tr.parentNode.appendChild(mr); }
+    var btn=document.createElement('button'); btn.type='button'; btn.className='mapbtn';
+    btn.innerHTML='&#128506;&#65039; Target &rarr; charger';
+    btn.addEventListener('click',function(){
+      if(mr.hidden){
+        if(!wrap.getAttribute('data-loaded')){
+          var fr=encodeURIComponent(pair[0]), to=encodeURIComponent(pair[1]);
+          var ifr=document.createElement('iframe'); ifr.loading='lazy'; ifr.title='Target to charger directions';
+          ifr.src='https://maps.google.com/maps?saddr='+fr+'&daddr='+to+'&output=embed';
+          wrap.appendChild(ifr); wrap.setAttribute('data-loaded','1');
+          var lnk=document.createElement('a'); lnk.className='maplink'; lnk.target='_blank'; lnk.rel='noopener';
+          lnk.href='https://www.google.com/maps/dir/?api=1&origin='+fr+'&destination='+to+'&travelmode=driving';
+          lnk.innerHTML='Open in Google Maps &rarr;';
+          td.appendChild(lnk);
+        }
+        mr.hidden=false; btn.classList.add('open');
+      } else { mr.hidden=true; btn.classList.remove('open'); }
+    });
+    chargerCell.appendChild(document.createElement('br'));
+    chargerCell.appendChild(btn);
+  });
+
+  // ---- progress tracking: tap to check off; NEXT auto-advances; saved on this device ----
+  var PKEY='obx-progress-v1', prog={};
+  try{ prog=JSON.parse(localStorage.getItem(PKEY)||'{}')||{}; }catch(e){ prog={}; }
+  function saveProg(){ try{ localStorage.setItem(PKEY,JSON.stringify(prog)); }catch(e){} }
+  var trackRows=[];
+  Array.prototype.forEach.call(document.querySelectorAll('table.resp tbody tr'),function(tr){
+    var stopCell=tr.querySelector('td.stop'); if(!stopCell) return;
+    var chargerCell=tr.querySelector('td.charger'); if(!chargerCell||!chargerCell.querySelector('a.navq')) return;
+    var nmEl=stopCell.querySelector('.nm'); if(!nmEl) return;
+    var miEl=tr.querySelector('td.mi');
+    var key=nmEl.textContent.trim()+'|'+(miEl?miEl.textContent.trim():'');
+    var optional=!!tr.querySelector('.chip.opt');
+    var badge=document.createElement('span'); badge.className='nextbadge'; badge.textContent='NEXT'; badge.hidden=true;
+    nmEl.parentNode.insertBefore(badge,nmEl);
+    var chip=document.createElement('button'); chip.type='button'; chip.className='progchip';
+    stopCell.appendChild(chip);
+    var rec={tr:tr,chip:chip,badge:badge,key:key,optional:optional};
+    trackRows.push(rec);
+    chip.addEventListener('click',function(ev){
+      ev.stopPropagation();
+      var st=prog[key]||'pending';
+      if(optional){ st = (st==='took')?'skip':((st==='skip')?(geoActive?'passed':'pending'):'took'); }
+      else { st = st==='done'?'pending':'done'; }
+      if(st==='pending'){ delete prog[key]; } else { prog[key]=st; }
+      saveProg(); renderProg();
+    });
+  });
+  function renderProg(){
+    trackRows.forEach(function(rec){
+      var st=prog[rec.key]||'pending';
+      rec.tr.classList.remove('is-done','is-took','is-skip','is-next');
+      rec.badge.hidden=true;
+      var lbl, cls='progchip';
+      if(rec.optional){
+        if(st==='took'){ lbl='✓ Took it'; cls+=' took'; rec.tr.classList.add('is-took'); }
+        else if(st==='skip'){ lbl='↷ Skipped'; cls+=' skip'; rec.tr.classList.add('is-skip'); }
+        else if(st==='passed'){ lbl='➜ Passed — took? skip?'; cls+=' passed'; rec.tr.classList.add('is-passed'); }
+        else { lbl='○ Stop here?'; }
+      } else {
+        if(st==='done'){ lbl='✓ Done'; cls+=' done'; rec.tr.classList.add('is-done'); }
+        else { lbl='○ Mark done'; }
+      }
+      rec.chip.textContent=lbl; rec.chip.className=cls;
+    });
+    for(var i=0;i<trackRows.length;i++){
+      var s=prog[trackRows[i].key]||'pending';
+      if(!s||s==='pending'){ trackRows[i].tr.classList.add('is-next'); trackRows[i].badge.hidden=false; break; }
+    }
+  }
+  renderProg();
+  var legendEl=document.querySelector('.legend');
+  if(legendEl){
+    var rst=document.createElement('button'); rst.type='button'; rst.className='progreset';
+    rst.textContent='↺ Reset progress';
+    rst.addEventListener('click',function(){ prog={}; saveProg(); renderProg(); });
+    legendEl.appendChild(rst);
+  }
+
+  // ---- live location: auto-advance NEXT, auto-pass stops behind you, show distances ----
+  var COORDS={
+    "Strongsville":[41.3171134,-81.8280719],
+    "Cranberry Twp":[40.6885494,-80.0845715],
+    "Monroeville":[40.4342288,-79.7727414],
+    "Hagerstown":[39.6198209,-77.7732799],
+    "Frederick":[39.382408,-77.3977345],
+    "Gaithersburg":[39.1188702,-77.2027154],
+    "McLean / Tysons":[38.9256094,-77.2108244],
+    "Fredericksburg":[38.2999624,-77.5132679],
+    "Richmond / White Oak":[37.5313398,-77.3566736],
+    "Williamsburg":[37.271352,-76.761245],
+    "Newport News":[37.107304,-76.4915515],
+    "Chesapeake":[36.7711037,-76.2321604],
+    "Nags Head lodging":[35.8976766,-75.5903475]
+  };
+  var APPROACH_MI=5, AT_MI=1.2, geoActive=false, geoWatch=null, geoCurIdx=0, wakeSentinel=null;
+  trackRows.forEach(function(rec){
+    var nm=rec.tr.querySelector('.nm'); rec.coord=nm?COORDS[norm(nm.textContent.trim())]:null;
+    var gd=document.createElement('span'); gd.className='geodist'; gd.hidden=true;
+    rec.chip.parentNode.appendChild(gd); rec.geodist=gd;
+  });
+  function haversine(la1,lo1,la2,lo2){var R=3958.8,p=Math.PI/180,dla=(la2-la1)*p,dlo=(lo2-lo1)*p;
+    var s=Math.sin(dla/2)*Math.sin(dla/2)+Math.cos(la1*p)*Math.cos(la2*p)*Math.sin(dlo/2)*Math.sin(dlo/2);
+    return 2*R*Math.asin(Math.sqrt(s));}
+  function fmtMi(m){return m<10?(Math.round(m*10)/10)+' mi':Math.round(m)+' mi';}
+  var geobar=document.createElement('div'); geobar.id='geobar'; geobar.hidden=true;
+  if(legendEl&&legendEl.parentNode){ legendEl.parentNode.insertBefore(geobar,legendEl.nextSibling); }
+  function onPos(p){
+    var lat=p.coords.latitude, lng=p.coords.longitude;
+    var dists=trackRows.map(function(rec){return rec.coord?haversine(lat,lng,rec.coord[0],rec.coord[1]):null;});
+    while(geoCurIdx<trackRows.length-1 && dists[geoCurIdx+1]!=null && dists[geoCurIdx]!=null && dists[geoCurIdx+1]<dists[geoCurIdx]) geoCurIdx++;
+    for(var i=0;i<geoCurIdx;i++){ var r=trackRows[i], st=prog[r.key];
+      if(r.optional){ if(!st||st==='pending') prog[r.key]='passed'; }
+      else { if(!st||st==='pending') prog[r.key]='done'; } }
+    saveProg(); renderProg();
+    trackRows.forEach(function(rec,idx){ var gd=rec.geodist; if(!gd) return; var d=dists[idx];
+      if(d==null){ gd.hidden=true; return; } gd.hidden=false;
+      if(idx<geoCurIdx){ gd.className='geodist past'; gd.textContent='✓ passed'; }
+      else if(idx===geoCurIdx){
+        if(d<=AT_MI){ gd.className='geodist near'; gd.textContent='📍 arriving — '+fmtMi(d); }
+        else if(d<=APPROACH_MI){ gd.className='geodist near'; gd.textContent='📍 '+fmtMi(d)+' — approaching'; }
+        else { gd.className='geodist'; gd.textContent='📍 '+fmtMi(d)+' away'; } }
+      else { gd.className='geodist'; gd.textContent='📍 '+fmtMi(d)+' away'; } });
+    var cur=trackRows[geoCurIdx];
+    if(cur){ var d2=dists[geoCurIdx], cn=cur.tr.querySelector('.nm'), name=cn?cn.textContent.trim():'next stop';
+      geobar.hidden=false;
+      if(d2!=null&&d2<=APPROACH_MI){ geobar.className='near'; geobar.textContent='📍 Approaching '+name+' — '+fmtMi(d2); }
+      else if(d2!=null){ geobar.className=''; geobar.textContent='📍 '+fmtMi(d2)+' to '+name; }
+      else { geobar.className=''; geobar.textContent='📍 Tracking…'; } }
+  }
+  function onGeoErr(e){ geobar.hidden=false; geobar.className='err';
+    geobar.textContent='📍 Location unavailable'+(e&&e.message?' ('+e.message+')':'')+'. A Wi-Fi-only iPad has no GPS while driving — run this on your iPhone or a cellular iPad.'; }
+  function reqWake(){ try{ if('wakeLock' in navigator){ navigator.wakeLock.request('screen').then(function(s){wakeSentinel=s;}).catch(function(){}); } }catch(e){} }
+  function relWake(){ try{ if(wakeSentinel){ wakeSentinel.release(); wakeSentinel=null; } }catch(e){} }
+  document.addEventListener('visibilitychange',function(){ if(geoActive&&document.visibilityState==='visible'&&!wakeSentinel) reqWake(); });
+  var geoBtn=document.createElement('button'); geoBtn.type='button'; geoBtn.className='geobtn'; geoBtn.textContent='📍 Use my location';
+  geoBtn.addEventListener('click',function(){
+    if(geoActive){ geoActive=false; geoBtn.textContent='📍 Use my location'; geoBtn.classList.remove('on');
+      if(geoWatch!=null){ navigator.geolocation.clearWatch(geoWatch); geoWatch=null; } geobar.hidden=true;
+      trackRows.forEach(function(rec){ if(rec.geodist) rec.geodist.hidden=true; }); relWake(); renderProg(); return; }
+    if(!navigator.geolocation){ onGeoErr({message:'not supported'}); return; }
+    geoActive=true; geoBtn.textContent='📍 Tracking — tap to stop'; geoBtn.classList.add('on');
+    trackRows.forEach(function(rec){ if(rec.geodist) rec.geodist.hidden=false; });
+    geoWatch=navigator.geolocation.watchPosition(onPos,onGeoErr,{enableHighAccuracy:true,maximumAge:5000,timeout:20000});
+    reqWake();
+  });
+  if(legendEl){ legendEl.insertBefore(geoBtn, (typeof rst!=='undefined'&&rst)?rst:null); }
+})();
+</script>
+</body>
+</html>
