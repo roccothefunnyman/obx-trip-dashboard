@@ -271,8 +271,8 @@
   }
 </style>
 <style id="devskin">
-/* ===== /dev - iPad card skin (overrides table layout; reuses all JS) ===== */
-.wrap{max-width:920px;padding:22px 18px 90px}
+/* ===== /dev - iPad card skin: full-width, 2-up cards in landscape ===== */
+.wrap{max-width:1400px;padding:22px 16px 90px}
 table.resp thead{display:none}
 table.resp, table.resp tbody, table.resp tr, table.resp td{display:block;width:100%}
 table.resp tr{border:1px solid var(--line);border-radius:16px;margin:0 0 14px;padding:16px 18px;background:var(--surface)}
@@ -314,6 +314,12 @@ tr.is-next{box-shadow:inset 0 0 0 3px var(--accent) !important}
 .stopmap-wrap{max-width:none}
 .stopmap-wrap iframe{height:260px}
 body::before{content:"DEV PREVIEW - experimental iPad layout";display:block;text-align:center;background:var(--verify);color:#0e1116;font-weight:800;font-size:13px;letter-spacing:.5px;padding:6px}
+/* 2-up card grid once there's room (iPad landscape, laptop); full-width rows span both */
+@media(min-width:900px){
+  table.resp tbody{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+  table.resp tr{margin:0}
+  table.resp tr:has(td[colspan]){grid-column:1 / -1}
+}
 </style>
 </head>
 <body>
