@@ -276,6 +276,7 @@
 table.resp thead{display:none}
 table.resp, table.resp tbody, table.resp tr, table.resp td{display:block;width:100%}
 table.resp tr{border:1px solid var(--line);border-radius:16px;margin:0 0 14px;padding:16px 18px;background:var(--surface)}
+table.resp tr[hidden]{display:none !important}
 table.resp td{border:none !important;padding:5px 0}
 table.resp td::before{content:attr(data-l);display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--faint);margin-bottom:3px}
 table.resp td.stop::before{display:none}
